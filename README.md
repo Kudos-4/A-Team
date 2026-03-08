@@ -14,6 +14,10 @@ To run all test, type this into the command line (make sure you're in root direc
 ```
 ## Structure
 
-All production code goes into the checkers folder. Games, UI, and database control should in separate folders. main.py should be the injection point to the menu.
+All production code goes into the checkers folder. Games, UI, and database control should be in separate folders. main.py should be the injection point to the menu.
 
-All files in checkers are treated like packages. They cannot be ran with python; python checkers/game/pieces.py won't work. If you want to run it directly use python -m checkers.game.pieces (use dots and no .py at the end). Or you could have another python file in the source directory, import, and run the python file regularly.
+All files in checkers are treated like packages. They cannot be run with Python; ```python checkers/game/pieces.py``` won't work. If you want to run it directly, use:
+
+ ```python -m checkers.game.pieces``` (use dots and no .py at the end).
+ 
+ Or you could have another Python file in the source directory, import it, and run the Python file regularly.
