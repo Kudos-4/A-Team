@@ -1,19 +1,19 @@
 from typing import Optional
-from .color_enum import Color
+from checkers.constants.colors import ColorID
 from .pieces import Piece
 
 
 class Tile:
     """Represents a cell on the board"""
 
-    def __init__(self, position: tuple[int, int], color: Color) -> None:
+    def __init__(self, position: tuple[int, int], color: ColorID) -> None:
         self._position = position
         self._color = color
         self._notation: Optional[int]
         self._piece: Optional[Piece] = None
 
     def _calculate_notation(self) -> Optional[int]:
-        if self._color == Color.WHITE:
+        if self._color == ColorID.WHITE:
             return None
         rows, columns = self._position
         # 4 black tiles per row
@@ -34,7 +34,7 @@ class Tile:
         return self._notation
 
     @property
-    def color(self) -> Color:
+    def color(self) -> ColorID:
         return self._color
 
     @property
@@ -55,7 +55,7 @@ class Board:
     ) -> list[list[Tile]]:
         rows, columns = board_size
         # Even rows are just opposite of odd tiles
-        odd = [Color(i % 2) for i in range(columns)]
+        odd = [ColorID(i % 2) for i in range(columns)]
         even = [~color for color in odd]
         board: list[list[Tile]] = []
         for i in range(rows):

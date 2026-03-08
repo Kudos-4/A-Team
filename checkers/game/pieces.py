@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from .color_enum import Color
+from checkers.constants.colors import ColorID
 
 
 class Piece(ABC):
-    def __init__(self, position: tuple[int, int], color: Color) -> None:
+    def __init__(self, position: tuple[int, int], color: ColorID) -> None:
         self._position = position
         self._color = color
         self._moveset = self._get_moveset()
@@ -24,7 +24,7 @@ class Piece(ABC):
         return self._position
 
     @property
-    def color(self) -> Color:
+    def color(self) -> ColorID:
         return self._color
 
     @property
@@ -35,7 +35,7 @@ class Piece(ABC):
 class Pawn(Piece):
     def _get_moveset(self) -> tuple[tuple[int, int], ...]:
         # Black is on top, therefore it moves down a row diagonally
-        if self._color == Color.BLACK:
+        if self._color == ColorID.BLACK:
             return ((1, -1), (1, 1))
         return ((-1, -1), (-1, 1))
 
@@ -46,6 +46,5 @@ class King(Piece):
 
 
 if __name__ == "__main__":
-    piece = Pawn((0, 1), Color.BLACK)
+    piece = Pawn((0, 1), ColorID.BLACK)
     print(piece.color)
-
