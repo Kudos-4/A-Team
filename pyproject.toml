@@ -1,0 +1,10 @@
+[project]
+name = "A-Team_Checkers"
+version = "1.0.0"
+dependencies = [
+    "pytest>=9.0.2",
+]
+
+[tool.ruff]
+line-length = 79
+
