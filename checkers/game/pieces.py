@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from color_enum import Color
+from .color_enum import Color
 
 
 class Piece(ABC):
@@ -26,7 +26,7 @@ class Piece(ABC):
     @property
     def color(self) -> Color:
         return self._color
-    
+
     @property
     def moveset(self) -> tuple[tuple[int, int], ...]:
         return self._moveset
@@ -44,6 +44,8 @@ class King(Piece):
     def _get_moveset(self) -> tuple[tuple[int, int], ...]:
         return ((1, -1), (1, 1), (-1, -1), (-1, 1))
 
+
 if __name__ == "__main__":
     piece = Pawn((0, 1), Color.BLACK)
     print(piece.color)
+

@@ -1,0 +1,13 @@
+*
+
+!.gitignore
+
+!checkers/
+!checkers/**
+
+!tests/
+!tests/**
+
+!main.py
+
+__**__/

@@ -1,6 +1,6 @@
 from typing import Optional
-from color_enum import Color
-from pieces import Piece
+from .color_enum import Color
+from .pieces import Piece
 
 
 class Tile:

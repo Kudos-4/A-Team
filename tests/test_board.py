@@ -1,1 +1,1 @@
-from game_logic.board import Board, Tile
+from checkers.game.board import Board, Tile
