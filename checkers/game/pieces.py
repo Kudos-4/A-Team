@@ -15,7 +15,7 @@ class Piece(ABC):
     def can_move_to(self, position: tuple[int, int]) -> bool:
         for move in self._moveset:
             new_position = tuple(map(sum, zip(self._position, move)))
-            if position == new_position:
+            if new_position == position:
                 return True
         return False
 
@@ -34,17 +34,12 @@ class Piece(ABC):
 
 class Pawn(Piece):
     def _get_moveset(self) -> tuple[tuple[int, int], ...]:
-        # Black is on top, therefore it moves down a row diagonally
-        if self._color == ColorID.BLACK:
-            return ((1, -1), (1, 1))
-        return ((-1, -1), (-1, 1))
+        # White is on bottom, therefore it moves up a row diagonally, vice versa.
+        if self._color:
+            return ((-1, -1), (-1, 1))
+        return ((1, -1), (1, 1))
 
 
 class King(Piece):
     def _get_moveset(self) -> tuple[tuple[int, int], ...]:
         return ((1, -1), (1, 1), (-1, -1), (-1, 1))
-
-
-if __name__ == "__main__":
-    piece = Pawn((0, 1), ColorID.BLACK)
-    print(piece.color)
