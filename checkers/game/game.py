@@ -11,7 +11,7 @@ class Game:
     def __init__(self, board_size: tuple[int, int]) -> None:
         self._board = Board(board_size)
         self._turn = ColorID.BLACK
-        
+
         self._black_pieces: list[Piece] = []
         self._white_pieces: list[Piece] = []
         self._populate_board()
@@ -35,21 +35,29 @@ class Game:
                 self._board.set_piece(position, pawn)
                 color_list.append(pawn)
 
-    def can_move_to(self, piece: Piece, position: tuple[int, int]) -> bool:
+    def can_move_to(
+        self, piece_position: tuple[int, int], new_position: tuple[int, int]
+    ) -> bool:
         """
         Checks if piece can move, if piece can move to spot based on
         position and tile's vacancy.
         """
         raise NotImplementedError()
 
-    def move_piece(self, piece: Piece, position: tuple[int, int]) -> None:
+    def move_piece(
+        self, piece_position: tuple[int, int], new_position: tuple[int, int]
+    ) -> None:
         # can_move_to() should be checked first
         # Also needs to check if is capturing
 
         # For now, just move piece
-        self.move_piece(piece, position)
-        raise NotImplementedError()
+        self._board.move_piece(piece_position, new_position)
 
-    def promote_piece(self, piece: Pawn) -> King:
-        """Returns a new King from pawn's attributes"""
+    def promote_pawn(self, piece: Pawn) -> King:
+        """Returns a new King from pawn's attributes if valid"""
+        # Return King object, replace pawn in list and on board
+        if not isinstance(piece, Pawn):
+            raise ValueError(
+                f"Pawn can only be promoted, but received {type(piece)}"
+            )
         raise NotImplementedError()

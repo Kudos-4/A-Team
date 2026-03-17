@@ -21,12 +21,10 @@ class Tile:
         if self._color:
             return None
         rows, col = self._position
-        n_black = rows * 4  # 4 black tiles per row
-        # Count how many black tiles on current row
-        # If odd row, count black squares starting at 0, else 1
-        start_index = (rows % 2) ^ 1
-        n_black += len(range(start_index, col + 1, 2))
-        return n_black
+        previous_rows = rows * 4  # 4 black tiles per row
+        # Doesn't matter if row is odd/even with int division
+        current_row = (col // 2) + 1
+        return previous_rows + current_row
 
     @property
     def position(self) -> tuple[int, int]:
@@ -76,10 +74,17 @@ class Board:
             board.append(new_row)
         return board
 
+    def set_piece(self, position: tuple[int, int], piece: Piece) -> None:
+        """Add piece to an empty spot."""
+        tile = self._tile_at(position)
+        if tile.piece:
+            raise ValueError("Position is already occupied with piece.")
+        tile.piece = piece
+
     def move_piece(
         self, position: tuple[int, int], new_position: tuple[int, int]
     ) -> None:
-        """Move piece to an empty space"""
+        """Move piece to an empty space. Does not handle if piece can reach; game controls rules."""
         # Board should modify tile.piece and update Piece.position
         current_tile = self._tile_at(position)
         new_tile = self._tile_at(new_position)
@@ -97,20 +102,17 @@ class Board:
         """Replaces a piece at a tile. Use this for promotions to new piece."""
         raise NotImplementedError()
 
-    def set_piece(self, position: tuple[int, int], piece: Piece) -> None:
-        """Add piece to empty spot"""
-        row, col = position
-        tile = self._board[row][col]
-        if tile.piece:
-            raise ValueError("Position is already occupied with piece.")
-        tile.piece = piece
-
     def _tile_at(self, position: tuple[int, int]) -> Tile:
         row, col = position
         return self._board[row][col]
 
     def piece_at(self, position: tuple[int, int]) -> Optional[Piece]:
         return self._tile_at(position).piece
+
+    def __getitem__(self, position: tuple[int, int]) -> Optional[Piece]:
+        """Same as piece_at(); board.piece_at(position) == board[position]"""
+        row, col = position
+        return self._board[row][col].piece
 
     @property
     def rows(self) -> int:

@@ -29,25 +29,25 @@ def test_king_not_pawn() -> None:
     assert not isinstance(king, Pawn)
 
 
-def test_white_pawn_moveset(white_pawn, black_pawn) -> None:
+def test_white_pawn_moveset(white_pawn: Pawn, black_pawn: King) -> None:
     assert white_pawn.moveset == ((-1, -1), (-1, 1))
     assert black_pawn.moveset == ((1, -1), (1, 1))
 
 
-def test_king_moveset(white_king, black_king) -> None:
+def test_king_moveset(white_king: King, black_king: King) -> None:
     oracle = ((1, -1), (1, 1), (-1, -1), (-1, 1))
     assert white_king.moveset == oracle
     assert black_king.moveset == oracle
 
 
-def test_raise_on_set_color(white_pawn, black_king) -> None:
+def test_raise_on_set_color(white_pawn: Pawn, black_king: King) -> None:
     with pytest.raises(AttributeError):
         white_pawn.color = ColorID.BLACK
     with pytest.raises(AttributeError):
         black_king.color = ColorID.WHITE
 
 
-def test_raise_on_set_moves(black_pawn, white_king) -> None:
+def test_raise_on_set_moves(black_pawn: Pawn, white_king: King) -> None:
     with pytest.raises(AttributeError):
         black_pawn.moveset = ((1, -1), (1, 1))
     with pytest.raises(AttributeError):

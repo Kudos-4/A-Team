@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+from typing import final
 
 from checkers.constants.colors import ColorID
 
@@ -37,6 +38,10 @@ class Piece(ABC):
     @property
     def moveset(self) -> tuple[tuple[int, int], ...]:
         return self._moveset
+    
+    @final
+    def __bool__(self):
+        return True
 
 
 class Pawn(Piece):
