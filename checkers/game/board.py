@@ -1,10 +1,11 @@
 from typing import Optional
+
 from checkers.constants.colors import ColorID
 from .pieces import Piece
 
 
 class Tile:
-    """Represents a cell on the board. Tiles should only be accessed through Board"""
+    """Represents a cell on the board. Tiles should only be accessed through Board."""
 
     def __init__(self, position: tuple[int, int], color: ColorID) -> None:
         self._position = position
@@ -51,16 +52,22 @@ class Tile:
 
 
 class Board:
+    """
+    Handles the state of the checkers game.
+    Any validations such as moves, promotions, and game status
+    belong in the Game class.
+    """
+
     def __init__(self, board_size: tuple[int, int]) -> None:
-        self.rows, self.cols = self.size = board_size
+        self._rows, self._cols = self.size = board_size
         self._board = self._initialize_board()
 
     def _initialize_board(self) -> list[list[Tile]]:
-        odd = [ColorID(i % 2) for i in range(self.cols)]
+        odd = [ColorID(i % 2) for i in range(self._cols)]
         # Even rows are opposite of odd tiles; use negate
         even = [~color for color in odd]
         board: list[list[Tile]] = []
-        for i in range(self.rows):
+        for i in range(self._rows):
             color_list = odd if i % 2 else even
             new_row = [
                 Tile(position=(i, j), color=color)
@@ -69,22 +76,44 @@ class Board:
             board.append(new_row)
         return board
 
-    def __getitem__(self, key: int) -> list[Tile]:
-        """To index by rows and columns."""
-        return self._board[key]
+    def move_piece(
+        self, position: tuple[int, int], new_position: tuple[int, int]
+    ) -> None:
+        """Move piece to an empty space"""
+        # Board should modify tile.piece and update Piece.position
+        current_tile = self._tile_at(position)
+        new_tile = self._tile_at(new_position)
+        new_tile.piece = current_tile.piece
+        current_tile.piece = None
 
-    def piece_at(self, position: tuple[int, int]) -> Optional[Piece]:
+    def update_piece(
+        self, position: tuple[int, int], new_piece: Piece
+    ) -> None:
+        """Replaces a piece at a tile. Use this for promotions to new piece."""
+        raise NotImplementedError()
+
+    def set_piece(self, position: tuple[int, int], piece: Piece) -> None:
+        """Add piece to empty spot"""
         row, col = position
         tile = self._board[row][col]
-        return tile.piece
+        if tile.piece:
+            raise ValueError("Position is already occupied with piece.")
+        tile.piece = piece
 
-    def get_black_tiles_at(self, row: int) -> tuple[Tile, ...]:
-        """Return only the black tiles at a specified row."""
-        current_row = self._board[row]
-        _, cols = self.size
-        start = (row % 2) ^ 1
-        black_indices = range(start, cols, 2)
-        return tuple(current_row[i] for i in black_indices)
+    def _tile_at(self, position: tuple[int, int]) -> Tile:
+        row, col = position
+        return self._board[row][col]
+
+    def piece_at(self, position: tuple[int, int]) -> Optional[Piece]:
+        return self._tile_at(position).piece
+
+    @property
+    def rows(self) -> int:
+        return self._rows
+
+    @property
+    def cols(self) -> int:
+        return self._cols
 
     def print_notation(self) -> None:
         for row in self._board:
@@ -113,8 +142,3 @@ class Board:
                     tile_type = tile.piece.color.value
                 print(f"{tile_type}", end="  ")
             print()
-
-
-if __name__ == "__main__":
-    board = Board((8, 8))
-    board.get_black_tiles_at(1)

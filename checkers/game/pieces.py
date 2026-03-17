@@ -1,27 +1,34 @@
+from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
+
 from checkers.constants.colors import ColorID
 
 
+@dataclass
 class Piece(ABC):
-    def __init__(self, position: tuple[int, int], color: ColorID) -> None:
-        self._position = position
-        self._color = color
+    """
+    Holds only the data for the piece. Pieces should not have any methods
+    relating to checkers. Only to update their data.
+    """
+
+    _position: tuple[int, int]
+    _color: ColorID
+    _moveset: tuple[tuple[int, int], ...] = field(init=False)
+
+    def __post_init__(self):
         self._moveset = self._get_moveset()
 
     @abstractmethod
     def _get_moveset(self) -> tuple[tuple[int, int], ...]:
         pass
 
-    def can_move_to(self, position: tuple[int, int]) -> bool:
-        for move in self._moveset:
-            new_position = tuple(map(sum, zip(self._position, move)))
-            if new_position == position:
-                return True
-        return False
-
     @property
     def position(self) -> tuple[int, int]:
         return self._position
+
+    @position.setter
+    def position(self, new_position: tuple[int, int]) -> None:
+        self._position = new_position
 
     @property
     def color(self) -> ColorID:

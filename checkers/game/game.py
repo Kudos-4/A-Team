@@ -2,9 +2,9 @@
 
 import itertools as itools
 
-from .board import Board
-from .pieces import Piece, Pawn, King
 from checkers.constants.colors import ColorID
+from .pieces import Piece, Pawn, King
+from .board import Board
 
 
 class Game:
@@ -27,10 +27,12 @@ class Game:
         white_rows = ((ColorID.WHITE, rows - i) for i in range(1, 4))
         for color_type, row in itools.chain(black_rows, white_rows):
             color_list = mapping[color_type]
-            for tile in self._board.get_black_tiles_at(row):
-                piece = Pawn(tile.position, color_type)
-                color_list.append(piece)
-                tile.piece = piece
+            start = (row % 2) ^ 1
+            for col in range(start, self._board.cols, 2):
+                position = (row, col)
+                pawn = Pawn(position, color_type)
+                self._board.set_piece(position, pawn)
+                color_list.append(pawn)
 
     def can_move_to(self, piece: Piece, position: tuple[int, int]) -> bool:
         """
@@ -39,8 +41,12 @@ class Game:
         """
         raise NotImplementedError()
 
-    def move_piece(self) -> None:
+    def move_piece(self, piece: Piece, position: tuple[int, int]) -> None:
+        # can_move_to() should be checked first
         # Also needs to check if is capturing
+
+        # For now, just move piece
+        self.move_piece(piece, position)
         raise NotImplementedError()
 
     def promote_piece(self, piece: Pawn) -> King:

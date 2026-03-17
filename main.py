@@ -3,6 +3,7 @@
 from checkers.game.game import Game
 # from checkers.user_interface.ui import UserInterface <- something similar
 
+
 def main() -> None:
     """Main runs UI function, UI imports game to display and interact with"""
     size = (8, 8)
