@@ -10,7 +10,8 @@ from .board import Board
 class Game:
     def __init__(self, board_size: tuple[int, int]) -> None:
         self._board = Board(board_size)
-        self._turn: ColorID = ColorID.BLACK
+        self._turn = ColorID.BLACK
+        
         self._black_pieces: list[Piece] = []
         self._white_pieces: list[Piece] = []
         self._populate_board()

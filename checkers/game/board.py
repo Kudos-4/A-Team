@@ -20,12 +20,12 @@ class Tile:
         """
         if self._color:
             return None
-        rows, cols = self._position
+        rows, col = self._position
         n_black = rows * 4  # 4 black tiles per row
         # Count how many black tiles on current row
         # If odd row, count black squares starting at 0, else 1
         start_index = (rows % 2) ^ 1
-        n_black += len(range(start_index, cols + 1, 2))
+        n_black += len(range(start_index, col + 1, 2))
         return n_black
 
     @property
@@ -83,8 +83,13 @@ class Board:
         # Board should modify tile.piece and update Piece.position
         current_tile = self._tile_at(position)
         new_tile = self._tile_at(new_position)
+        if not current_tile.piece or new_tile.piece:
+            raise ValueError(
+                "Current tile is empty or piece already occupies target location."
+            )
         new_tile.piece = current_tile.piece
         current_tile.piece = None
+        new_tile.piece.position = new_position
 
     def update_piece(
         self, position: tuple[int, int], new_piece: Piece
