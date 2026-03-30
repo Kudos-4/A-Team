@@ -17,16 +17,16 @@ from checkers.constants.colors import ColorID
 #                           Pieces Tests
 # ---------------------------------------------------------------------------
 
-class TestPieces(unittest.TestCase):
 
+class TestPieces(unittest.TestCase):
     def setUp(self):
-        self.white_pawn = Pawn(_position=(0, 0), _color=ColorID.WHITE)
-        self.black_pawn = Pawn(_position=(0, 4), _color=ColorID.BLACK)
-        self.white_king = King(_position=(1, 2), _color=ColorID.WHITE)
-        self.black_king = King(_position=(1, 2), _color=ColorID.BLACK)
+        self.white_pawn = Pawn(_position=(0, 0), _color=ColorID.LIGHT)
+        self.black_pawn = Pawn(_position=(0, 4), _color=ColorID.DARK)
+        self.white_king = King(_position=(1, 2), _color=ColorID.LIGHT)
+        self.black_king = King(_position=(1, 2), _color=ColorID.DARK)
 
     def test_king_not_pawn(self):
-        king = King((0, 0), ColorID.BLACK)
+        king = King((0, 0), ColorID.DARK)
         self.assertNotIsInstance(king, Pawn)
 
     def test_white_pawn_moveset(self):
@@ -42,9 +42,9 @@ class TestPieces(unittest.TestCase):
 
     def test_raise_on_set_color(self):
         with self.assertRaises(AttributeError):
-            self.white_pawn.color = ColorID.BLACK
+            self.white_pawn.color = ColorID.DARK
         with self.assertRaises(AttributeError):
-            self.black_king.color = ColorID.WHITE
+            self.black_king.color = ColorID.LIGHT
 
     def test_raise_on_set_moveset(self):
         with self.assertRaises(AttributeError):
@@ -57,8 +57,8 @@ class TestPieces(unittest.TestCase):
 #                              Board Tests
 # ---------------------------------------------------------------------------
 
-class TestBoard(unittest.TestCase):
 
+class TestBoard(unittest.TestCase):
     def setUp(self):
         self.board = Board(board_size=(8, 8))
 
@@ -75,25 +75,25 @@ class TestBoard(unittest.TestCase):
                 current_color = ~current_color
 
     def test_set_piece(self):
-        pawn = Pawn(_position=(0, 1), _color=ColorID.BLACK)
+        pawn = Pawn(_position=(0, 1), _color=ColorID.DARK)
         self.board.set_piece((0, 1), pawn)
         self.assertEqual(self.board.piece_at((0, 1)), pawn)
 
     def test_set_piece_occupied_raises(self):
-        pawn = Pawn(_position=(0, 1), _color=ColorID.BLACK)
+        pawn = Pawn(_position=(0, 1), _color=ColorID.DARK)
         self.board.set_piece((0, 1), pawn)
         with self.assertRaises(ValueError):
             self.board.set_piece((0, 1), pawn)
 
     def test_move_piece(self):
-        pawn = Pawn(_position=(0, 1), _color=ColorID.BLACK)
+        pawn = Pawn(_position=(0, 1), _color=ColorID.DARK)
         self.board.set_piece((0, 1), pawn)
         self.board.move_piece((0, 1), (1, 2))
         self.assertIsNone(self.board.piece_at((0, 1)))
         self.assertEqual(self.board.piece_at((1, 2)), pawn)
 
     def test_move_piece_updates_position(self):
-        pawn = Pawn(_position=(0, 1), _color=ColorID.BLACK)
+        pawn = Pawn(_position=(0, 1), _color=ColorID.DARK)
         self.board.set_piece((0, 1), pawn)
         self.board.move_piece((0, 1), (1, 2))
         self.assertEqual(pawn.position, (1, 2))
@@ -103,8 +103,8 @@ class TestBoard(unittest.TestCase):
             self.board.move_piece((0, 0), (1, 1))
 
     def test_move_to_occupied_raises(self):
-        pawn_a = Pawn(_position=(0, 1), _color=ColorID.BLACK)
-        pawn_b = Pawn(_position=(1, 2), _color=ColorID.WHITE)
+        pawn_a = Pawn(_position=(0, 1), _color=ColorID.DARK)
+        pawn_b = Pawn(_position=(1, 2), _color=ColorID.LIGHT)
         self.board.set_piece((0, 1), pawn_a)
         self.board.set_piece((1, 2), pawn_b)
         with self.assertRaises(ValueError):
@@ -115,6 +115,7 @@ class TestBoard(unittest.TestCase):
 #                             Game Tests
 # ---------------------------------------------------------------------------
 
+
 def _is_black_square(cols: int, position: tuple) -> bool:
     row, col = position
     start = (row % 2) ^ 1
@@ -122,7 +123,6 @@ def _is_black_square(cols: int, position: tuple) -> bool:
 
 
 class TestGame(unittest.TestCase):
-
     def setUp(self):
         self.game = Game(board_size=(8, 8))
 
@@ -135,18 +135,24 @@ class TestGame(unittest.TestCase):
     def test_pieces_on_black_squares(self):
         all_pieces = self.game._black_pieces + self.game._white_pieces
         self.assertTrue(
-            all(_is_black_square(self.game._board.cols, p.position) for p in all_pieces)
+            all(
+                _is_black_square(self.game._board.cols, p.position)
+                for p in all_pieces
+            )
         )
 
     def test_wrong_piece_position_detected(self):
         all_pieces = self.game._black_pieces + self.game._white_pieces
         all_pieces[0]._position = (0, 0)  # Force onto a white square
         self.assertFalse(
-            all(_is_black_square(self.game._board.cols, p.position) for p in all_pieces)
+            all(
+                _is_black_square(self.game._board.cols, p.position)
+                for p in all_pieces
+            )
         )
 
     def test_initial_turn_is_black(self):
-        self.assertEqual(self.game._turn, ColorID.BLACK)
+        self.assertEqual(self.game._turn, ColorID.DARK)
 
 
 # ---------------------------------------------------------------------------

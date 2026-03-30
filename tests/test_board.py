@@ -45,14 +45,14 @@ def test_tile_notation(empty_board: Board) -> None:
 
 def test_set_on_empty(initial_board: Board) -> None:
     position = (0, 0)
-    piece = Pawn(position, ColorID.BLACK)
+    piece = Pawn(position, ColorID.DARK)
     initial_board.set_piece((0, 0), piece)
     assert initial_board[position]
 
 
 def test_set_on_occupied(initial_board: Board) -> None:
     existing_location = (0, 1)
-    piece = Pawn(existing_location, ColorID.BLACK)
+    piece = Pawn(existing_location, ColorID.DARK)
     with pytest.raises(ValueError):
         initial_board.set_piece(existing_location, piece)
 

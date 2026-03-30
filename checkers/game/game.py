@@ -10,7 +10,7 @@ from .board import Board
 class Game:
     def __init__(self, board_size: tuple[int, int]) -> None:
         self._board = Board(board_size)
-        self._turn = ColorID.BLACK
+        self._turn = ColorID.DARK
 
         self._black_pieces: list[Piece] = []
         self._white_pieces: list[Piece] = []
@@ -19,13 +19,13 @@ class Game:
     def _populate_board(self) -> None:
         """Add designated pieces to top/bottom three rows' black squares"""
         mapping = {
-            ColorID.BLACK: self._black_pieces,
-            ColorID.WHITE: self._white_pieces,
+            ColorID.DARK: self._black_pieces,
+            ColorID.LIGHT: self._white_pieces,
         }
         rows = self._board.rows
         # Assuming rows > 6
-        black_rows = ((ColorID.BLACK, i) for i in range(3))
-        white_rows = ((ColorID.WHITE, rows - i) for i in range(1, 4))
+        black_rows = ((ColorID.DARK, i) for i in range(3))
+        white_rows = ((ColorID.LIGHT, rows - i) for i in range(1, 4))
         for color_type, row in itools.chain(black_rows, white_rows):
             color_list = mapping[color_type]
             start = (row % 2) ^ 1

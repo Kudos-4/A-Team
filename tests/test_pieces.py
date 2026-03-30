@@ -6,26 +6,26 @@ from checkers.constants.colors import ColorID
 
 @pytest.fixture
 def white_pawn() -> Pawn:
-    return Pawn(_position=(0, 0), _color=ColorID.WHITE)
+    return Pawn(_position=(0, 0), _color=ColorID.LIGHT)
 
 
 @pytest.fixture
 def black_pawn() -> Pawn:
-    return Pawn(_position=(0, 4), _color=ColorID.BLACK)
+    return Pawn(_position=(0, 4), _color=ColorID.DARK)
 
 
 @pytest.fixture
 def white_king() -> King:
-    return King(_position=(1, 2), _color=ColorID.WHITE)
+    return King(_position=(1, 2), _color=ColorID.LIGHT)
 
 
 @pytest.fixture
 def black_king() -> King:
-    return King(_position=(1, 2), _color=ColorID.BLACK)
+    return King(_position=(1, 2), _color=ColorID.DARK)
 
 
 def test_king_not_pawn() -> None:
-    king = King((0, 0), ColorID.BLACK)
+    king = King((0, 0), ColorID.DARK)
     assert not isinstance(king, Pawn)
 
 
@@ -42,9 +42,9 @@ def test_king_moveset(white_king: King, black_king: King) -> None:
 
 def test_raise_on_set_color(white_pawn: Pawn, black_king: King) -> None:
     with pytest.raises(AttributeError):
-        white_pawn.color = ColorID.BLACK
+        white_pawn.color = ColorID.DARK
     with pytest.raises(AttributeError):
-        black_king.color = ColorID.WHITE
+        black_king.color = ColorID.LIGHT
 
 
 def test_raise_on_set_moves(black_pawn: Pawn, white_king: King) -> None:

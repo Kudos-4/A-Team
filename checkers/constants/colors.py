@@ -7,8 +7,8 @@ class ColorID(Flag):
     Can somewhat be treated as an integer (such as truthiness).
     """
 
-    BLACK = 0
-    WHITE = 1
+    DARK = 0
+    LIGHT = 1
 
 
 class Color(Enum):
