@@ -97,42 +97,39 @@ class CheckersUserInterface(tk.Tk):
         def update_gamemode(gamemode: GameMode) -> Callable:
             return lambda: gamemode_type.set(gamemode)
 
-        tk.Label(
-            window,
-            text="HOW WOULD YOU LIKE TO DIE 😈",
-            font=("Comic Sans MS", 42),
-            pady=10,
-        ).pack()
-        tk.Label(
-            window,
-            text="I WANT TO DIE BY THE CHECKER'S VERSION OF UHHHHH....",
-            font=("Comic Sans MS", 42),
-        ).pack(pady=50)
+        labels = (
+            "HOW WOULD YOU LIKE TO DIE 😈",
+            '"I WANT TO DIE BY THE CHECKER\'S VERSION OF UHHHHH...."',
+        )
+        for label in labels:
+            tk.Label(
+                window,
+                text=label,
+                font=("Comic Sans MS", 42),
+            ).pack(pady=75)
 
         button_frame = tk.Frame(window)
-        button_frame.columnconfigure(0)
-        button_frame.columnconfigure(1)
         choices = (
             ("GARRY KASPAROV", GameMode.PVP),
             ("DEEP BLUE", GameMode.PVE),
         )
-        for i, (option, gamemode) in enumerate(choices):
+        for option, gamemode in choices:
             new_button = tk.Button(
                 button_frame,
                 text=option,
-                font=("Arial", 28),
+                font=("Arial", 46),
                 # Don't simplify helper function to single lambda
                 # Both will refer to gamemode variable; both will be GameMode.PVE
-                # update_gamemode() called during loop & standard lambda doesn't
+                # update_gamemode() called during loop & standard lambda does not
                 command=update_gamemode(gamemode),
             )
-            new_button.grid(padx=100, pady=40, row=0, column=i, sticky="W")
-        button_frame.pack(padx=10)
+            new_button.grid(pady=20, sticky="nsew")
+        button_frame.pack()
 
         window.wait_variable(gamemode_type)
+        # Clear window
         for widget in tuple(window.children.values()):
             widget.destroy()
 
     def start_game(self, window: tk.Toplevel, configs: dict[str, Any]) -> None:
         game = Game(configs["board-size"])
-        game._board.print_positions()

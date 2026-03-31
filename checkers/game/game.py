@@ -12,15 +12,15 @@ class Game:
         self._board = Board(board_size)
         self._turn = ColorID.DARK
 
-        self._black_pieces: list[Piece] = []
-        self._white_pieces: list[Piece] = []
+        self._dark_pieces: list[Piece] = []
+        self._light_pieces: list[Piece] = []
         self._populate_board()
 
     def _populate_board(self) -> None:
         """Add designated pieces to top/bottom three rows' black squares"""
         mapping = {
-            ColorID.DARK: self._black_pieces,
-            ColorID.LIGHT: self._white_pieces,
+            ColorID.DARK: self._dark_pieces,
+            ColorID.LIGHT: self._light_pieces,
         }
         rows = self._board.rows
         # Assuming rows > 6
@@ -61,3 +61,15 @@ class Game:
                 f"Pawn can only be promoted, but received {type(piece)}"
             )
         raise NotImplementedError()
+
+    @property
+    def turn(self) -> ColorID:
+        return self._turn
+
+    @property
+    def dark_pieces(self) -> list[Piece]:
+        return self._dark_pieces
+    
+    @property
+    def light_pieces(self) -> list[Piece]:
+        return self._light_pieces
