@@ -1,8 +1,6 @@
 """
 auth_logic.py
 Pure authentication logic — no Tkinter dependency.
-This can be tested without a display and will later
-connect to SQLite via auth.py.
 """
 
 from typing import Optional
