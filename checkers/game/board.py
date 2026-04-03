@@ -99,8 +99,15 @@ class Board:
     def update_piece(
         self, position: tuple[int, int], new_piece: Piece
     ) -> None:
-        """Replaces a piece at a tile. Use this for promotions to new piece."""
-        raise NotImplementedError()
+        tile = self._tile_at(position)
+        if tile.piece is None:
+            raise ValueError("No piece at position to replace.")
+        tile.piece = new_piece
+    def remove_piece(self, position: tuple[int, int]) -> None:
+        tile = self._tile_at(position)
+        if tile.piece is None:
+            raise ValueError("No piece at position to be removed")
+        tile.piece = None
 
     def _tile_at(self, position: tuple[int, int]) -> Tile:
         row, col = position
