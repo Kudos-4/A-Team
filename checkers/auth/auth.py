@@ -40,12 +40,11 @@ def register_user(username: str, email: str, password: str) -> tuple[bool, str]:
 def login_user(username: str, password: str) -> bool:
     """Check credentials. Returns True if valid."""
     username = username.lower()
-    email = email.lower()
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
         "SELECT pwd_hash FROM users WHERE username = ? OR email = ?",
-        (username, email)
+        (username, username)
     )
     row = cursor.fetchone()
     conn.close()
