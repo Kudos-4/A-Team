@@ -38,29 +38,105 @@ class Game:
     def can_move_to(
         self, piece_position: tuple[int, int], new_position: tuple[int, int]
     ) -> bool:
+        piece = self._board.piece_at(piece_position)
+        
+        if piece is None:
+            return False
+        if piece.color != self._turn:
+            return False
+        if self._board.piece_at(new_position) is not None:
+            return False
+        valid_moves = self.get_valid_moves(piece)
+        return new_position in valid_moves
         """
         Checks if piece can move, if piece can move to spot based on
         position and tile's vacancy.
         """
-        raise NotImplementedError()
 
     def move_piece(
         self, piece_position: tuple[int, int], new_position: tuple[int, int]
     ) -> None:
-        # can_move_to() should be checked first
-        # Also needs to check if is capturing
+        piece = self._board.piece_at(piece_position)
+        valid_moves = self.get_valid_moves(piece)
+        
+        captured = valid_moves.get(new_position)
+        if captured:
+            color_list = (self._dark_pieces
+                          if captured.color == ColorID.DARK 
+                          else self._light_pieces)
+            color_list.remove(captured)
+            self._board.remove_piece(captured.position)
 
-        # For now, just move piece
         self._board.move_piece(piece_position, new_position)
+        self._check_promotion(self._board.piece_at(new_position))
+        self.switch_turn()
 
     def promote_pawn(self, piece: Pawn) -> King:
         """Returns a new King from pawn's attributes if valid"""
-        # Return King object, replace pawn in list and on board
         if not isinstance(piece, Pawn):
             raise ValueError(
                 f"Pawn can only be promoted, but received {type(piece)}"
             )
-        raise NotImplementedError()
+        king = King(piece.position, piece.color)
+        self._board.update_piece(piece.position, king)
+        color_list = (self._dark_pieces
+                      if piece.color == ColorID.DARK
+                      else self._light_pieces)
+        color_list.remove(piece)
+        color_list.append(king)
+        return king
+    
+    def get_valid_moves(self, piece: Piece) -> dict:
+        #Returns destination: capured peice or none. 
+        #None = reg move.  Piece = piece that would be captured.
+        moves = {}
+        row, col = piece.position
+        
+        for dr, dc in piece.moveset:
+            destination = (row + dr, col + dc)
+            dest_row, dest_col = destination
+            if not( 0<= dest_row < self._board.rows and 
+                   0 <= dest_col < self._board.cols):
+                continue
+            target = self._board.piece_at(destination)
+            
+            if target is None:
+                moves[destination] = None
+            elif target.color != piece.color:
+                jump = (row + 2 *dr, col + 2*dc)
+                jump_row, jump_col = jump
+                if (0 <= jump_row < self._board.rows and
+                    0 <= jump_col < self._board.cols and
+                    self._board.piece_at(jump) is None):
+                    moves[jump] = target
+        return moves
+    
+    def switch_turn(self) -> None:
+        #swap whose turn it is after a move
+        self._turn = (ColorID.LIGHT
+                    if self._turn == ColorID.DARK
+                    else ColorID.DARK)
+        
+    def _check_promotion(self, piece: Piece) -> None:
+        #promote pawn if it reached the last row
+        if not isinstance(piece, Pawn):
+            return
+        target_row = self._board.rows - 1 if piece.color == ColorID.DARK else 0
+        if piece.position[0] == target_row:
+            self.promote_pawn(piece)
+    
+    def is_game_over(self) -> bool:
+        #Win Condition is if an opponent has no pieces or no legal moves
+        opponent_pieces = (
+            self._light_pieces if self._turn == ColorID.DARK 
+            else self._dark_pieces
+        )
+        if not opponent_pieces:
+            return True
+        for piece in opponent_pieces:
+            if self.get_valid_moves(piece):
+                return False
+        return True
 
     @property
     def turn(self) -> ColorID:
