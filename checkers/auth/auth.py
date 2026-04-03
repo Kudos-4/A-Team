@@ -36,6 +36,8 @@ def register_user(username: str, email: str, password: str) -> tuple[bool, str]:
         if "username" in str(e):
             return False, "Username is already taken."
         return False, "Email address is already in use."
+    finally:
+        conn.close()
 
 def login_user(username: str, password: str) -> bool:
     """Check credentials. Returns True if valid."""
