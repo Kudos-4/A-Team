@@ -99,10 +99,10 @@ class Board:
     def update_piece(
         self, position: tuple[int, int], new_piece: Piece
     ) -> None:
-        tile = self._tile_at(position)
-        if tile.piece is None:
+         tile = self._tile_at(position)
+    if tile.piece is None:
             raise ValueError("No piece at position to replace.")
-        tile.piece = new_piece
+    tile.piece = new_piece
     def remove_piece(self, position: tuple[int, int]) -> None:
         tile = self._tile_at(position)
         if tile.piece is None:
