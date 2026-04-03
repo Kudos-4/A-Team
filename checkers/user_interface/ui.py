@@ -30,7 +30,7 @@ class CheckersUserInterface(tk.Tk):
         self.tick_datetime()
 
         # Call AuthUI to handle login and register
-        self.auth = AuthUI(self, on_login_success=self.login_success)
+        self._auth = AuthUI(self, on_login_success=self.login_success)
         # Show login screen before main menu
         self._auth.show_login()
         
