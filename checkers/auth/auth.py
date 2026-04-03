@@ -1,6 +1,6 @@
 """
 auth.py
-Handles user registration and login logic, including password hashing and database interaction.
+Handles user registration and login, including password hashing and database interaction.
 connect auth_logic.py for pure validation logic, and database.py for SQLite access. 
 UI will call these functions to perform auth operations.
 
