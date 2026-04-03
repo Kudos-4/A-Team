@@ -1,9 +1,11 @@
-from typing import Callable, Any
+from typing import Callable, Any, Optional
 from enum import StrEnum, auto
 
 import tkinter as tk
+import datetime
 
 from checkers.game.game import Game
+from checkers.user_interface.auth_ui import AuthUI
 
 
 class GameMode(StrEnum):
@@ -19,10 +21,55 @@ class CheckersUserInterface(tk.Tk):
         self.resolution_str = f"{self.width}x{self.height}"
         self.geometry(self.resolution_str)
         self.attributes("-fullscreen", True)
-        self.main_menu()
+
+        # Track logged-in user
+        self.current_user: Optional[str] = None
+
+        # Clock
+        self._datetime_var = tk.StringVar()
+        self.tick_datetime()
+
+        # Call AuthUI to handle login and register
+        self.auth = AuthUI(self, on_login_success=self.login_success)
+        # Show login screen before main menu
+        self._auth.show_login()
+        
+    def login_success(self, username: str) -> None:
+        """
+        Shared with auth_ui.py.
+        Called by AuthUI when login succeeds -> show main menu.
+        """
+        self.current_user = username
+        self.main_menu()       
+
 
     def main_menu(self) -> None:
         self.title("Main Menu")  # Window name
+
+        # Clear any existing widgets (login screen)
+        for widget in self.winfo_children():
+            widget.destroy()
+            
+        # Top bar: datetime (left) | username (right)
+        top_bar = tk.Frame(self)
+        top_bar.pack(fill="x", padx=16, pady=(8, 0)) 
+
+        # datetime
+        tk.Label(
+            top_bar,
+            textvariable=self._datetime_var,
+            font=("Arial", 16),
+            anchor="w",
+        ).pack(side="left")
+
+        # username
+        tk.Label(
+            top_bar,
+            text=f"👤  {self.current_user}",
+            font=("Arial", 16, "bold"),
+            anchor="e",
+        ).pack(side="right")        
+        
         menu_title_label = tk.Label(
             self,
             text="Welcome to Checker HELL!!( •̀ ω •́ )y",
@@ -34,10 +81,21 @@ class CheckersUserInterface(tk.Tk):
         self.create_menu_buttons(
             ("I WANNA PLAY AND LOSE AGAIN!! (╯▔皿▔)╯", self.open_new_game),
             ("GAME HISTORY", self.open_game_history),
-            ("USER INFO", self.open_login),
+            ("LOG OUT", self.handle_logout),
             ("GET ME OUTTA HEEREERERERE 🏃", self.destroy),
         )
 
+    def handle_logout(self) -> None:
+        """Clear session and return to login screen."""
+        self.current_user = None
+        self._auth.show_login()
+
+    def tick_datetime(self) -> None:
+        """Update the shared clock variable every second."""
+        now = datetime.datetime.now().strftime("%Y-%m-%d  %H:%M:%S")
+        self._datetime_var.set(now)
+        self.after(1000, self.tick_datetime)
+        
     def create_menu_buttons(self, *args: tuple[str, Callable]) -> None:
         """Attaches newly created buttons to button_frame"""
         button_frame = tk.Frame(self)
@@ -65,9 +123,6 @@ class CheckersUserInterface(tk.Tk):
 
     def open_game_history(self) -> None:
         print("open_game_history Not implemented")
-
-    def open_login(self) -> None:
-        print("open_login Not implemented")
 
     def open_new_game(self) -> None:
         """Opens a new window instance of a checkers game."""
