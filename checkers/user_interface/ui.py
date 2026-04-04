@@ -173,10 +173,13 @@ class GameScreen(Screen):
         }
         # Not initialized because clear_screen() will remove it
         self.frame: tk.Frame
+        self.turn_var: tk.StringVar
 
     def run(self) -> None:
         self.prompt_gamemode()
-        self.initialize_board()
+        self.configure(background="#26242f")
+        self.init_game_labels()
+        self.init_board()
 
     def prompt_gamemode(self) -> None:
         """Create UI for selecting gamemode. When player clicks on button
@@ -213,7 +216,13 @@ class GameScreen(Screen):
         self.wait_variable(self.gamemode_type)
         self.clear_screen()
 
-    def initialize_board(self) -> None:
+    def init_game_labels(self) -> None:
+        turn = "BLACK" if self.game.turn == ColorID.DARK else "WHITE"
+        self.turn_var = tk.StringVar(value=f"Current Turn: {turn}")
+        label = tk.Label(self, textvariable=self.turn_var)
+        label.pack(anchor="nw", )
+
+    def init_board(self) -> None:
         self.frame = tk.Frame(self)
         self.frame.place(relx=0.5, rely=0.5, anchor="center")
         for row in self.game._board._board:
