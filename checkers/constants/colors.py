@@ -1,4 +1,4 @@
-from enum import Enum, Flag
+from enum import Flag, StrEnum
 
 
 class ColorID(Flag):
@@ -11,8 +11,7 @@ class ColorID(Flag):
     LIGHT = 1
 
 
-class Color(Enum):
-    """Holds tuples containing RGB values."""
+class Color(StrEnum):
+    """Contains hex values of colors."""
 
-    BLACK = (0, 0, 0)
-    WHITE = (255, 255, 255)
+    CHARCOAL = "#26242f"
