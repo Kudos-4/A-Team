@@ -6,6 +6,7 @@ import tkinter as tk
 from checkers.user_interface.auth_ui import AuthUI
 from checkers.user_interface.game_ui import GameScreen
 from checkers.user_interface.screen import Screen
+from checkers.user_interface.game_history_ui import GameHistoryScreen
 
 
 class CheckersUserInterface(tk.Tk):
@@ -119,7 +120,12 @@ class CheckersUserInterface(tk.Tk):
         return window
 
     def open_game_history(self) -> None:
-        print("open_game_history Not implemented")
+        """Opens the game history screen in a new window."""
+        window_name = "Game History"
+        history_window = self.switch_to_new_window(GameHistoryScreen, window_name)
+        history_window.run()
+        self.wait_window(history_window)
+        self.wm_deiconify()
 
     def open_new_game(self) -> None:
         """Opens a new window instance of a checkers game."""
