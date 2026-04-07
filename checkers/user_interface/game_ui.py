@@ -1,5 +1,5 @@
-from __future__ import annotations
 from enum import StrEnum, auto
+from pathlib import Path
 
 import tkinter as tk
 
@@ -8,6 +8,8 @@ from checkers.game.game import Game
 from checkers.game.board import Tile
 from checkers.constants.colors import ColorID, Color
 from checkers.auth import auth_logic
+
+ASSET_DIRECTORY = Path("checkers") / "user_interface" / "assets"
 
 
 class GameMode(StrEnum):
@@ -26,15 +28,15 @@ class GameScreen(Screen):
 
         self.tiles: list[list[tk.Button]] = []
         filepaths = {
-            "light": r"checkers\user_interface\assets\LightTile.png",
-            "dark": r"checkers\user_interface\assets\DarkTile.png",
-            "dark-pawn": r"checkers\user_interface\assets\DarkPawn.png",
-            "dark-king": r"checkers\user_interface\assets\DarkKing.png",
-            "light-pawn": r"checkers\user_interface\assets\LightPawn.png",
-            "light-king": r"checkers\user_interface\assets\LightKing.png",
+            "light": ASSET_DIRECTORY / "LightTile.png",
+            "dark": ASSET_DIRECTORY / "DarkTile.png",
+            "dark-pawn": ASSET_DIRECTORY / "DarkPawn.png",
+            "dark-king": ASSET_DIRECTORY / "DarkKing.png",
+            "light-pawn": ASSET_DIRECTORY / "LightPawn.png",
+            "light-king": ASSET_DIRECTORY / "LightKing.png",
         }
         self.icons = {
-            color: tk.PhotoImage(file=path) for color, path in filepaths.items()
+            color: tk.PhotoImage(file=str(path)) for color, path in filepaths.items()
         }
 
         # Not initialized because clear_screen() will remove it
