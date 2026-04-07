@@ -47,7 +47,14 @@ class Game:
         if self._board.piece_at(new_position) is not None:
             return False
         valid_moves = self.get_valid_moves(piece)
-        return new_position in valid_moves
+        if new_position not in valid_moves:
+            return False
+        #if jumps are available, only allow jump moves
+        all_jumps = self.get_all_jumps(self._turn)
+        if all_jumps:
+            #check if this move is a jump
+            return valid_moves.get(new_position) is not None
+        return True
         """
         Checks if piece can move, if piece can move to spot based on
         position and tile's vacancy.
@@ -110,6 +117,21 @@ class Game:
                     self._board.piece_at(jump) is None):
                     moves[jump] = target
         return moves
+    
+    def get_all_jumps(self, color: ColorID) -> dict:
+        #Returns all available jumps for a given color. If one exists, player must take it
+        jumps = {}
+        pieces = (self._dark_pieces if color == ColorID.DARK
+                  else self._light_pieces)
+        for piece in pieces:
+            moves = self.get_valid_moves(piece)
+            piece_jumps = {dest: captured
+                           for dest, captured in moves.items()
+                           if captured is not None}
+            if piece_jumps:
+                jumps[piece] = piece_jumps
+        return jumps
+    
     
     def switch_turn(self) -> None:
         #swap whose turn it is after a move
