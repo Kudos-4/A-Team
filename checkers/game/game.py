@@ -74,6 +74,11 @@ class Game:
 
         self._board.move_piece(piece_position, new_position)
         self._check_promotion(self._board.piece_at(new_position))
+
+        made_capture = any(valid_moves.values())
+        other_captures_available = any(self.get_valid_moves(piece).values())
+        if made_capture and other_captures_available:
+            return
         self.switch_turn()
 
     def promote_pawn(self, piece: Pawn) -> King:
