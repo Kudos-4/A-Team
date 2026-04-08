@@ -110,10 +110,11 @@ class CheckersUserInterface(tk.Tk):
         screen_type: type[Screen],
         title: str = "",
         enable_fullscreen: bool = True,
+        **screen_kwargs,
     ) -> Screen:
         """Hides main menu and creates a new window to work off of."""
         self.withdraw()  # Hide function
-        window = screen_type()
+        window = screen_type(**screen_kwargs)
         window.title(title)
         window.geometry(self.resolution_str)
         window.attributes("-fullscreen", enable_fullscreen)
@@ -129,8 +130,11 @@ class CheckersUserInterface(tk.Tk):
 
     def open_new_game(self) -> None:
         """Opens a new window instance of a checkers game."""
-        window_name = "🦅AMERICAN CHECKERS RAHHHHH🔫"
-        game_window = self.switch_to_new_window(GameScreen, window_name)
+        game_window = self.switch_to_new_window(
+            GameScreen,
+            "🦅AMERICAN CHECKERS RAHHHHH🔫",
+            player1_username=self.current_user,
+        )
         game_window.run()
         self.wait_window(game_window)
         self.wm_deiconify()

@@ -1,12 +1,13 @@
 from enum import StrEnum, auto
+from typing import Optional
 from pathlib import Path
 
 import tkinter as tk
 
+from checkers.constants.colors import ColorID, Color
 from checkers.user_interface.screen import Screen
 from checkers.game.game import Game
 from checkers.game.board import Tile
-from checkers.constants.colors import ColorID, Color
 from checkers.auth import auth_logic
 
 ASSET_DIRECTORY = Path("checkers") / "user_interface" / "assets"
@@ -18,11 +19,14 @@ class GameMode(StrEnum):
 
 
 class GameScreen(Screen):
-    def __init__(self) -> None:
+    def __init__(self, player1_username: str) -> None:
         super().__init__()
 
+        self.player1_username = player1_username
+        self.player2_username = tk.StringVar()
+        self.dark_piece_player = tk.StringVar()
         self.gamemode_type = tk.StringVar()
-        self.player2_user = tk.StringVar()
+
         self.board_size = (8, 8)
         self.game = Game(self.board_size)
 
@@ -39,16 +43,17 @@ class GameScreen(Screen):
             color: tk.PhotoImage(file=str(path)) for color, path in filepaths.items()
         }
 
-        # Not initialized because clear_screen() will remove it
-        self.frame: tk.Frame
+        self.board_frame: tk.Frame
         self.turn_var: tk.StringVar
+        self.selected_tile: Optional[Tile] = None
 
     def run(self) -> None:
         self.prompt_gamemode()
         if self.gamemode_type.get() == GameMode.PVP:
-            self.prompt_player2_user()
+            self.prompt_player2_username()
         else:
-            self.player2_user.set("Computer")
+            self.player2_username.set("Computer")
+        self.prompt_whos_first()
         self.configure(background=Color.CHARCOAL)
         self.init_game_labels()
         self.init_board()
@@ -88,7 +93,7 @@ class GameScreen(Screen):
         self.wait_variable(self.gamemode_type)
         self.clear_screen()
 
-    def prompt_player2_user(self) -> None:
+    def prompt_player2_username(self) -> None:
         frame = tk.Frame(self)
         frame.pack()
         tk.Label(
@@ -102,7 +107,7 @@ class GameScreen(Screen):
 
         tk.Entry(
             frame,
-            textvariable=self.player2_user,
+            textvariable=self.player2_username,
             font=("Arial", 18),
             width=28,
         ).pack()
@@ -118,10 +123,36 @@ class GameScreen(Screen):
         self.wait_variable(username_flag)
         self.clear_screen()
 
+    def prompt_whos_first(self) -> None:
+        """Ask who plays the first move (as black)."""
+        frame = tk.Frame(self)
+        frame.pack()
+        tk.Label(
+            frame,
+            text="Who plays first as black?",
+            font=("Arial", 28, "bold"),
+        ).pack(pady=20, anchor="center")
+
+        tk.Button(
+            frame,
+            text=self.player1_username,
+            font=("Arial", 18),
+            command=lambda: self.dark_piece_player.set(self.player1_username),
+        ).pack(pady=20, anchor="center")
+        tk.Button(
+            frame,
+            text=self.player2_username.get(),
+            font=("Arial", 18),
+            command=lambda: self.dark_piece_player.set(self.player2_username.get()),
+        ).pack(pady=20, anchor="center")
+
+        self.wait_variable(self.dark_piece_player)
+        self.clear_screen()
+
     def handle_username(self, flag: tk.BooleanVar, error_var: tk.StringVar) -> None:
         """Checks if input meets minimum requirements,
         notifies if it doesn't and boolean flag if met."""
-        error_msg = auth_logic.validate_username(self.player2_user.get())
+        error_msg = auth_logic.validate_username(self.player2_username.get())
         if error_msg:
             error_var.set(error_msg)
             return
@@ -134,14 +165,14 @@ class GameScreen(Screen):
         label.pack(anchor="nw")
 
     def init_board(self) -> None:
-        """Creates board visuals and its cells' functions"""
-        self.frame = tk.Frame(self)
-        self.frame.place(relx=0.5, rely=0.5, anchor="center")
+        """Creates board visuals and each tiles' functions"""
+        self.board_frame = tk.Frame(self)
+        self.board_frame.place(relx=0.5, rely=0.5, anchor="center")
         for row in self.game._board._board:
             current_row: list[tk.Button] = []
             for tile in row:
                 button = tk.Button(
-                    self.frame,
+                    self.board_frame,
                     image=self.get_image_at_(tile),
                     command=lambda position=tile.position: self.tile_clicked(position),
                 )
