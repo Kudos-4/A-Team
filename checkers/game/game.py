@@ -129,7 +129,7 @@ class Game:
                            for dest, captured in moves.items()
                            if captured is not None}
             if piece_jumps:
-                jumps[piece] = piece_jumps
+                jumps[piece.position] = piece_jumps
         return jumps
     
     
