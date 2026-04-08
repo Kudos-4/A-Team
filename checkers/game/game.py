@@ -1,5 +1,6 @@
 """Handles the game state and logic"""
 
+from typing import Optional
 import itertools as itools
 
 from checkers.constants.colors import ColorID
@@ -38,6 +39,7 @@ class Game:
     def can_move_to(
         self, piece_position: tuple[int, int], new_position: tuple[int, int]
     ) -> bool:
+        """Check if can move with respect to tile pieces, turn, and jumps."""
         piece = self._board.piece_at(piece_position)
         
         if piece is None:
@@ -55,10 +57,6 @@ class Game:
             #check if this move is a jump
             return valid_moves.get(new_position) is not None
         return True
-        """
-        Checks if piece can move, if piece can move to spot based on
-        position and tile's vacancy.
-        """
 
     def move_piece(
         self, piece_position: tuple[int, int], new_position: tuple[int, int]
@@ -93,8 +91,10 @@ class Game:
         color_list.append(king)
         return king
     
-    def get_valid_moves(self, piece: Piece) -> dict:
-        #Returns destination: capured peice or none. 
+    def get_valid_moves(self, piece: Piece) -> dict[tuple[int, int], Optional[Piece]]:
+        """Given a piece, return key-value pairs of possible
+        positions and any piece it can take making that move"""
+        #Returns destination: capured peice or none.
         #None = reg move.  Piece = piece that would be captured.
         moves = {}
         row, col = piece.position

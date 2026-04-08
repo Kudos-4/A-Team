@@ -30,7 +30,7 @@ class GameScreen(Screen):
         self.board_size = (8, 8)
         self.game = Game(self.board_size)
 
-        self.tiles: list[list[tk.Button]] = []
+        self.tile_buttons: list[list[tk.Button]] = []
         filepaths = {
             "light": ASSET_DIRECTORY / "LightTile.png",
             "dark": ASSET_DIRECTORY / "DarkTile.png",
@@ -46,6 +46,10 @@ class GameScreen(Screen):
         self.board_frame: tk.Frame
         self.turn_var: tk.StringVar
         self.selected_tile: Optional[Tile] = None
+        # Piece notation: 9-14, 23x14
+        # Piece move: '-'
+        # Piece captures 'x'
+        self.logs: list[tuple[int, str, int]] = []
 
     def run(self) -> None:
         self.prompt_gamemode()
@@ -159,10 +163,9 @@ class GameScreen(Screen):
         flag.set(True)
 
     def init_game_labels(self) -> None:
-        turn = "BLACK" if self.game.turn == ColorID.DARK else "WHITE"
-        self.turn_var = tk.StringVar(value=f"Current Turn: {turn}")
-        label = tk.Label(self, textvariable=self.turn_var)
-        label.pack(anchor="nw")
+        self.turn_var = tk.StringVar(value=f"BLACK ({self.dark_piece_player.get()})")
+        tk.Label(self, text="Current Turn:").pack(anchor="nw")
+        tk.Label(self, textvariable=self.turn_var).pack(anchor="nw")
 
     def init_board(self) -> None:
         """Creates board visuals and each tiles' functions"""
@@ -179,7 +182,7 @@ class GameScreen(Screen):
                 i, j = tile.position
                 button.grid(row=i, column=j)
                 current_row.append(button)
-            self.tiles.append(current_row)
+            self.tile_buttons.append(current_row)
 
     def get_image_at_(self, tile: Tile) -> tk.PhotoImage:
         if not tile.piece:
@@ -191,4 +194,62 @@ class GameScreen(Screen):
 
     def tile_clicked(self, position: tuple[int, int]) -> None:
         """Handles essentially every part of the game logic"""
-        print(f"Tile pressed at {position}")
+        tile = self.game._board._tile_at(position)
+        valid_move_made = bool(
+            self.selected_tile
+            and self.selected_tile.piece
+            and self.game.can_move_to(self.selected_tile.position, position)
+        )
+        self.get_new_selected_state(tile, valid_move_made)
+        if not valid_move_made:
+            return
+        # Log movement to list here
+
+    def get_new_selected_state(self, tile: Tile, valid_move_made: bool) -> None:
+        """Updates the state of the selected tile and its highlighting."""
+        if valid_move_made:
+            print(f"Move made from {self.selected_tile.position} to {tile.position}.")
+            self.toggle_highlighting(self.selected_tile.position)
+            self.selected_tile = None
+        elif not tile.piece or tile.piece.color != self.game.turn:
+            print(f"Invalid tile at {tile.position} pressed.")
+            # Raise invalid tile message here
+            return
+        elif not self.selected_tile:
+            print(f"Tile at {tile.position} highlighted.")
+            self.selected_tile = tile
+            self.toggle_highlighting(tile.position)
+        # Same tile pressed, deselect
+        elif tile is self.selected_tile:
+            print(f"Tile at {tile.position} deselected.")
+            self.selected_tile = None
+            self.toggle_highlighting(tile.position)
+        # Player presses on different piece it owns, switch to it
+        elif tile.piece.color == self.selected_tile.piece.color:
+            print(f"Tile at {self.selected_tile.position} switched to {tile.position}.")
+            self.toggle_highlighting(self.selected_tile.position)
+            self.selected_tile = None
+            self.tile_clicked(tile.position)
+
+    def toggle_highlighting(
+        self,
+        position: tuple[int, int],
+        piece_highlight: str = "lime green",
+        moveset_color: str = "yellow",
+    ) -> None:
+        """Toggle a tile's and its possible moves' highlight colors"""
+        # Highlight main piece
+        row, col = position
+        main_button = self.tile_buttons[row][col]
+        self._toggle_tile_highlight(main_button, piece_highlight)
+        # Highlight main piece's moves
+        main_piece = self.game._board[position]
+        for move_row, move_col in self.game.get_valid_moves(main_piece):
+            move_button = self.tile_buttons[move_row][move_col]
+            self._toggle_tile_highlight(move_button, moveset_color)
+
+    def _toggle_tile_highlight(self, button: tk.Button, highlight_color: str) -> None:
+        """Change highlighting of a given tkinter color."""
+        if button["bg"] == highlight_color:
+            highlight_color = "SystemButtonFace"  # default color
+        button.config(bg=highlight_color)
