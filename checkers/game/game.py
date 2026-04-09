@@ -76,17 +76,13 @@ class Game:
         self._check_promotion(self._board.piece_at(new_position))
 
         made_capture = any(valid_moves.values())
-        other_captures_available = any(self.get_valid_moves(piece).values())
-        if made_capture and other_captures_available:
+        can_still_capture = any(self.get_valid_moves(piece).values())
+        if made_capture and can_still_capture:
             return
         self.switch_turn()
 
     def promote_pawn(self, piece: Pawn) -> King:
         """Returns a new King from pawn's attributes if valid"""
-        if not isinstance(piece, Pawn):
-            raise ValueError(
-                f"Pawn can only be promoted, but received {type(piece)}"
-            )
         king = King(piece.position, piece.color)
         self._board.update_piece(piece.position, king)
         color_list = (self._dark_pieces
@@ -95,34 +91,38 @@ class Game:
         color_list.remove(piece)
         color_list.append(king)
         return king
-    
-    def get_valid_moves(self, piece: Piece) -> dict[tuple[int, int], Optional[Piece]]:
+
+    def get_valid_moves(
+        self, piece: Piece
+    ) -> dict[tuple[int, int], Piece] | dict[tuple[int, int], None]:
         """Given a piece, return key-value pairs of possible
-        positions and any piece it can take making that move"""
-        #Returns destination: capured peice or none.
-        #None = reg move.  Piece = piece that would be captured.
-        moves = {}
+        positions and any piece it can take making that move."""
+        regular_moves: dict[tuple[int, int], None] = {}
+        forced_moves: dict[tuple[int, int], Piece] = {}
+
         row, col = piece.position
-        
         for dr, dc in piece.moveset:
             destination = (row + dr, col + dc)
             dest_row, dest_col = destination
-            if not( 0<= dest_row < self._board.rows and 
+            if not(0 <= dest_row < self._board.rows and 
                    0 <= dest_col < self._board.cols):
                 continue
             target = self._board.piece_at(destination)
-            
-            if target is None:
-                moves[destination] = None
-            elif target.color != piece.color:
-                jump = (row + 2 *dr, col + 2*dc)
-                jump_row, jump_col = jump
-                if (0 <= jump_row < self._board.rows and
-                    0 <= jump_col < self._board.cols and
-                    self._board.piece_at(jump) is None):
-                    moves[jump] = target
-        return moves
-    
+            if not target:
+                regular_moves[destination] = None
+                continue
+            # Check for jumps
+            if target.color == piece.color:
+                continue
+            jump = (row + 2 * dr, col + 2 * dc)
+            jump_row, jump_col = jump
+            if (0 <= jump_row < self._board.rows and
+                0 <= jump_col < self._board.cols and
+                self._board.piece_at(jump) is None):
+                forced_moves[jump] = target
+        # Use forced moves if any, else return regular moves
+        return forced_moves or regular_moves
+
     def get_all_jumps(self, color: ColorID) -> dict:
         #Returns all available jumps for a given color. If one exists, player must take it
         jumps = {}
@@ -153,7 +153,7 @@ class Game:
             self.promote_pawn(piece)
     
     def get_game_winner(self) -> Optional[ColorID]:
-        """Returns the ColorID of the winner, else return None"""
+        """Returns the ColorID of the winner if game is done."""
         mapping = ((ColorID.LIGHT, self.light_pieces), (ColorID.DARK, self.dark_pieces))
         for color, pieces in mapping:
             no_pieces_left = not bool(pieces)

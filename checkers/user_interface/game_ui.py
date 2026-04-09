@@ -206,14 +206,15 @@ class GameScreen(Screen):
             and self.game.can_move_to(self.selected_tile.position, position)
         )
         forced_move_exists = bool(
-            valid_move_made
-            and tile.piece
-            and any(self.game.get_valid_moves(tile.piece).values())
+            tile.piece and any(self.game.get_valid_moves(tile.piece).values())
         )
         self.selected_tile = self.get_new_selected_state(tile, valid_move_made)
         self.update_tile_highlights(original_tile)
         if not valid_move_made:
             return
+        if forced_move_exists:
+            # Set state of forced move UI here
+            pass
         # Log movement to list here
         self.move_piece(original_tile, tile)
         self.update_turn()
@@ -284,8 +285,9 @@ class GameScreen(Screen):
     def _toggle_tile_highlight(self, button: tk.Button, highlight_color: str) -> None:
         """Change highlighting using a given tkinter color."""
         if button["bg"] == highlight_color:
-            highlight_color = "SystemButtonFace"  # default color
-        button["bg"] = highlight_color
+            static_button = self.tile_buttons[0][0]
+            highlight_color = static_button["bg"]
+        button["bg"] = button["activebackground"] = highlight_color
 
     def move_piece(self, old_tile: Tile, new_tile: Tile) -> None:
         self.game.move_piece(old_tile.position, new_tile.position)
