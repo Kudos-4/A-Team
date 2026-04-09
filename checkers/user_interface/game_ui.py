@@ -71,21 +71,17 @@ class GameScreen(Screen):
         """Create UI for selecting gamemode. When player clicks on button
         modify mutable gamemode_type to update state and continue to start_game()"""
 
-        labels = (
-            "HOW WOULD YOU LIKE TO DIE 😈",
-            '"I WANT TO DIE BY THE CHECKER\'S VERSION OF UHHHHH...."',
-        )
-        for label in labels:
+        for label in ("How would you like to play", "Select a gamemode:"):
             tk.Label(
                 self,
                 text=label,
-                font=("Comic Sans MS", 42),
+                font=("Arial", 42),
             ).pack(pady=75)
 
         button_frame = tk.Frame(self)
         options = (
-            ("GARRY KASPAROV", GameMode.PVP),
-            ("DEEP BLUE", GameMode.PVE),
+            ("Player vs Player", GameMode.PVP),
+            ("Player vs Computer", GameMode.PVE),
         )
         for option, gamemode in options:
             new_button = tk.Button(
@@ -190,7 +186,7 @@ class GameScreen(Screen):
                 current_row.append(button)
             self.tile_buttons.append(current_row)
 
-    def get_image_from_(self, tile: Tile) -> tk.PhotoImage:
+    def get_image_from_(self, tile: Tile) -> ImageTk.PhotoImage:
         if not tile.piece:
             color = "dark" if tile.color == ColorID.DARK else "light"
             key = f"{color}-tile"

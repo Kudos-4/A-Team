@@ -3,9 +3,9 @@ from typing import Callable, Optional
 import datetime
 import tkinter as tk
 
+from checkers.user_interface.screen import Screen
 from checkers.user_interface.auth_ui import AuthUI
 from checkers.user_interface.game_ui import GameScreen
-from checkers.user_interface.screen import Screen
 from checkers.user_interface.game_history_ui import GameHistoryScreen
 
 
@@ -67,17 +67,17 @@ class CheckersUserInterface(tk.Tk):
 
         menu_title_label = tk.Label(
             self,
-            text="Welcome to Checker HELL!!( •̀ ω •́ )y",
-            font=("Comic Sans MS", 42),
+            text="Welcome to Checkers!!( •̀ ω •́ )y",
+            font=("Calibri", 42),
             pady=10,
         )
         menu_title_label.pack()
 
         self.create_menu_buttons(
-            ("I WANNA PLAY AND LOSE AGAIN!! (╯▔皿▔)╯", self.open_new_game),
+            ("NEW GAME", self.open_new_game),
             ("GAME HISTORY", self.open_game_history),
             ("LOG OUT", self.handle_logout),
-            ("GET ME OUTTA HEEREERERERE 🏃", self.destroy),
+            ("EXIT", self.destroy),
         )
 
     def handle_logout(self) -> None:
@@ -132,7 +132,7 @@ class CheckersUserInterface(tk.Tk):
         """Opens a new window instance of a checkers game."""
         game_window = self.switch_to_new_window(
             GameScreen,
-            "🦅AMERICAN CHECKERS RAHHHHH🔫",
+            "🦅AMERICAN CHECKERS RAHHHHH🔫 GOD BLESS THIS COUNTRAAAY🛐 O(∩_∩)O" + " NEW YORK PIZZA" * 100,
             player1_username=self.current_user,
         )
         game_window.run()

@@ -78,8 +78,8 @@ class AuthUI:
         # Title and welcome message
         tk.Label(
             container,
-            text="Welcome to Checker HELL!!( •̀ ω •́ )y",
-            font=("Comic Sans MS", 36),
+            text="Welcome to Checkers!!( •̀ ω •́ )y",
+            font=("Calibri", 36),
         ).pack(pady=(0, 10))
 
         # Login form title
@@ -156,7 +156,7 @@ class AuthUI:
         # Top bar: date and time
         self._add_top_bar()
 
-        # Centered container 
+        # Centered container
         container = tk.Frame(self._root)
         container.place(relx=0.5, rely=0.55, anchor="center")
 
@@ -230,7 +230,7 @@ class AuthUI:
         ).grid(row=0, column=1, padx=10)
 
     # ==========================================================================
-    #                           Private: Login logic 
+    #                           Private: Login logic
     # ==========================================================================
 
     def _handle_login(self) -> None:
@@ -261,7 +261,7 @@ class AuthUI:
         success = login_user(username, password)
 
         if success:
-            self._failed_attempts = 0 # reset on successful login
+            self._failed_attempts = 0  # reset on successful login
             self._login_error_var.set("")
             self._on_login_success(username)  # hand control back to ui.py
         else:
