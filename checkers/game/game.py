@@ -152,18 +152,15 @@ class Game:
         if piece.position[0] == target_row:
             self.promote_pawn(piece)
     
-    def is_game_over(self) -> bool:
-        #Win Condition is if an opponent has no pieces or no legal moves
-        opponent_pieces = (
-            self._light_pieces if self._turn == ColorID.DARK 
-            else self._dark_pieces
-        )
-        if not opponent_pieces:
-            return True
-        for piece in opponent_pieces:
-            if self.get_valid_moves(piece):
-                return False
-        return True
+    def get_game_winner(self) -> Optional[ColorID]:
+        """Returns the ColorID of the winner, else return None"""
+        mapping = ((ColorID.LIGHT, self.light_pieces), (ColorID.DARK, self.dark_pieces))
+        for color, pieces in mapping:
+            no_pieces_left = not bool(pieces)
+            no_moves_left = not any(map(self.get_valid_moves, pieces))
+            if no_pieces_left or no_moves_left:
+                return ~color
+        return None
 
     @property
     def turn(self) -> ColorID:
