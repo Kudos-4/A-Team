@@ -2,6 +2,7 @@ from enum import StrEnum, auto
 from typing import Optional
 from pathlib import Path
 
+from PIL import Image, ImageTk
 import tkinter as tk
 
 from checkers.constants.colors import ColorID, Color
@@ -30,8 +31,16 @@ class GameScreen(Screen):
 
         self.board_size = (8, 8)
         self.game = Game(self.board_size)
+        self.icons: dict[str, ImageTk.PhotoImage] = self.initialize_icons()
 
         self.tile_buttons: list[list[tk.Button]] = []
+        self.board_frame: tk.Frame
+        self.turn_var: tk.StringVar
+        self.selected_tile: Optional[Tile] = None
+        self.piece_jumps: dict[tuple[int, int], Optional[Piece]] = {}
+        self.logs: list[str] = []
+
+    def initialize_icons(self) -> dict[str, ImageTk.PhotoImage]:
         filepaths = {
             "light-tile": ASSET_DIRECTORY / "LightTile.png",
             "dark-tile": ASSET_DIRECTORY / "DarkTile.png",
@@ -40,15 +49,12 @@ class GameScreen(Screen):
             "light-pawn": ASSET_DIRECTORY / "LightPawn.png",
             "light-king": ASSET_DIRECTORY / "LightKing.png",
         }
-        self.icons = {
-            color: tk.PhotoImage(file=str(path)) for color, path in filepaths.items()
-        }
-
-        self.board_frame: tk.Frame
-        self.turn_var: tk.StringVar
-        self.selected_tile: Optional[Tile] = None
-        self.piece_jumps: dict[tuple[int, int], Optional[Piece]] = {}
-        self.logs: list[str] = []
+        scaled_images = (
+            # Original 120x120
+            (key, Image.open(path).resize((100, 100)))
+            for key, path in filepaths.items()
+        )
+        return {key: ImageTk.PhotoImage(image) for key, image in scaled_images}
 
     def run(self) -> None:
         self.prompt_gamemode()
@@ -126,6 +132,15 @@ class GameScreen(Screen):
         self.wait_variable(username_flag)
         self.clear_screen()
 
+    def handle_username(self, flag: tk.BooleanVar, error_var: tk.StringVar) -> None:
+        """Checks if input meets minimum requirements,
+        notifies if it doesn't and boolean flag if met."""
+        error_msg = auth_logic.validate_username(self.player2_username.get())
+        if error_msg:
+            error_var.set(error_msg)
+            return
+        flag.set(True)
+
     def prompt_whos_first(self) -> None:
         """Ask who plays the first move (as black)."""
         frame = tk.Frame(self)
@@ -151,15 +166,6 @@ class GameScreen(Screen):
 
         self.wait_variable(self.dark_piece_player)
         self.clear_screen()
-
-    def handle_username(self, flag: tk.BooleanVar, error_var: tk.StringVar) -> None:
-        """Checks if input meets minimum requirements,
-        notifies if it doesn't and boolean flag if met."""
-        error_msg = auth_logic.validate_username(self.player2_username.get())
-        if error_msg:
-            error_var.set(error_msg)
-            return
-        flag.set(True)
 
     def init_game_labels(self) -> None:
         self.turn_var = tk.StringVar()
@@ -280,10 +286,10 @@ class GameScreen(Screen):
             self._toggle_tile_highlight(move_button, moveset_color)
 
     def _toggle_tile_highlight(self, button: tk.Button, highlight_color: str) -> None:
-        """Change highlighting of a given tkinter color."""
+        """Change highlighting using a given tkinter color."""
         if button["bg"] == highlight_color:
             highlight_color = "SystemButtonFace"  # default color
-        button.config(bg=highlight_color)
+        button["bg"] = highlight_color
 
     def move_piece(self, old_tile: Tile, new_tile: Tile) -> None:
         self.game.move_piece(old_tile.position, new_tile.position)
@@ -301,7 +307,7 @@ class GameScreen(Screen):
     def update_image(self, tile: Tile) -> None:
         row, col = tile.position
         button = self.tile_buttons[row][col]
-        button.config(image=self.get_image_from_(tile))
+        button["image"] = self.get_image_from_(tile)
 
     def update_turn(self) -> None:
         """Read game state's turn and updates turn UI accordingly"""

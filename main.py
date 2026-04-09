@@ -3,6 +3,7 @@
 from checkers.user_interface.ui import CheckersUserInterface
 from checkers.auth.database import init_db
 
+
 def main() -> None:
     """
     Main runs UI function, UI imports game to display and interact with.

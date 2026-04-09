@@ -3,6 +3,7 @@ name = "A-Team_Checkers"
 version = "1.0.0"
 dependencies = [
     "bcrypt>=5.0.0",
+    "pillow>=12.2.0",
     "pytest>=9.0.2",
 ]
 
