@@ -48,17 +48,14 @@ class GameScreen(Screen):
         self.turn_var: tk.StringVar
         self.selected_tile: Optional[Tile] = None
         self.piece_jumps: dict[tuple[int, int], Optional[Piece]] = {}
-        # Piece notation: 9-14, 23x14
-        # Piece move: '-'
-        # Piece captures 'x'
-        self.logs: list[tuple[int, str, int]] = []
+        self.logs: list[str] = []
 
     def run(self) -> None:
         self.prompt_gamemode()
         if self.gamemode_type.get() == GameMode.PVP:
             self.prompt_player2_username()
         else:
-            self.player2_username.set("Computer")
+            self.player2_username.set("CPU")
         self.prompt_whos_first()
         self.configure(background=Color.CHARCOAL)
         self.init_game_labels()
@@ -165,7 +162,8 @@ class GameScreen(Screen):
         flag.set(True)
 
     def init_game_labels(self) -> None:
-        self.turn_var = tk.StringVar(value=f"BLACK ({self.dark_piece_player.get()})")
+        self.turn_var = tk.StringVar()
+        self.update_turn()
         tk.Label(self, text="Current Turn:").pack(anchor="nw")
         tk.Label(self, textvariable=self.turn_var).pack(anchor="nw")
 
@@ -178,7 +176,7 @@ class GameScreen(Screen):
             for tile in row:
                 button = tk.Button(
                     self.board_frame,
-                    image=self.get_image_at_(tile),
+                    image=self.get_image_from_(tile),
                     command=lambda position=tile.position: self.tile_clicked(position),
                 )
                 i, j = tile.position
@@ -186,7 +184,7 @@ class GameScreen(Screen):
                 current_row.append(button)
             self.tile_buttons.append(current_row)
 
-    def get_image_at_(self, tile: Tile) -> tk.PhotoImage:
+    def get_image_from_(self, tile: Tile) -> tk.PhotoImage:
         if not tile.piece:
             color = "dark" if tile.color == ColorID.DARK else "light"
             key = f"{color}-tile"
@@ -205,38 +203,42 @@ class GameScreen(Screen):
             and self.selected_tile.piece
             and self.game.can_move_to(self.selected_tile.position, position)
         )
+        forced_move_exists = bool(
+            valid_move_made
+            and tile.piece
+            and any(self.game.get_valid_moves(tile.piece).values())
+        )
         self.selected_tile = self.get_new_selected_state(tile, valid_move_made)
-        self.update_selected_tile_highlighting(original_tile)
+        self.update_tile_highlights(original_tile)
         if not valid_move_made:
             return
         # Log movement to list here
         self.move_piece(original_tile, tile)
-        self.switch_turn()
+        self.update_turn()
+
+        if (winner := self.game.get_game_winner()) is not None:
+            self.clear_screen()
+            self.show_game_over_screen(winner)
 
     def get_new_selected_state(
         self, tile: Tile, valid_move_made: bool
     ) -> Optional[Tile]:
         """Updates the state of the selected tile and its highlighting."""
         if valid_move_made:
-            print(f"Move made from {self.selected_tile.position} to {tile.position}.")
             return None
         if not tile.piece or tile.piece.color != self.game.turn:
-            print(f"Invalid tile at {tile.position} pressed.")
             # Raise invalid tile message here
             return self.selected_tile
         if not self.selected_tile:
-            print(f"Tile at {tile.position} highlighted.")
             return tile
         # Same tile pressed, deselect
         if tile is self.selected_tile:
-            print(f"Tile at {tile.position} deselected.")
             return None
         # Player presses on different piece it owns, switch to it
         if tile.piece.color == self.selected_tile.piece.color:
-            print(f"Tile at {self.selected_tile.position} switched to {tile.position}.")
             return tile
 
-    def update_selected_tile_highlighting(self, original_tile: Optional[Tile]) -> None:
+    def update_tile_highlights(self, original_tile: Optional[Tile]) -> None:
         # Valid move made
         if original_tile and not self.selected_tile:
             self.toggle_highlighting(original_tile.position)
@@ -285,25 +287,43 @@ class GameScreen(Screen):
 
     def move_piece(self, old_tile: Tile, new_tile: Tile) -> None:
         self.game.move_piece(old_tile.position, new_tile.position)
+        # Update tiles
         self.update_image(old_tile)
         self.update_image(new_tile)
         if captured_piece := self.piece_jumps[new_tile.position]:
             captured_tile = self.game._board._tile_at(captured_piece.position)
             self.update_image(captured_tile)
-        print()
+        # Log move
+        move_type = "x" if captured_piece else "-"
+        move = f"{old_tile.notation}{move_type}{new_tile.notation}"
+        self.logs.append(move)
 
     def update_image(self, tile: Tile) -> None:
         row, col = tile.position
         button = self.tile_buttons[row][col]
-        button.config(image=self.get_image_at_(tile))
+        button.config(image=self.get_image_from_(tile))
 
-    def switch_turn(self) -> None:
-        dark_player = self.dark_piece_player.get()
-        if self.game.turn == ColorID.DARK:
-            self.turn_var.set(f"BLACK ({dark_player})")
-            return
-        if self.player1_username == dark_player:
-            user = self.player2_username
-        else:
-            user = self.player1_username
-        self.turn_var.set(f"WHITE ({user})")
+    def update_turn(self) -> None:
+        """Read game state's turn and updates turn UI accordingly"""
+        username = self.get_username_by_color(self.game.turn)
+        color = "BLACK" if self.game.turn == ColorID.DARK else "WHITE"
+        self.turn_var.set(f"{color} ({username})")
+
+    def get_username_by_color(self, color: ColorID) -> str:
+        player1_is_dark = self.player1_username == self.dark_piece_player.get()
+        color_is_dark = color == ColorID.DARK
+        return (
+            self.player1_username
+            if player1_is_dark == color_is_dark
+            else self.player2_username.get()
+        )
+
+    def show_game_over_screen(self, winner: ColorID) -> None:
+        winner_username = self.get_username_by_color(winner)
+        self.frame = tk.Frame()
+        tk.Label(
+            self,
+            pady=100,
+            text=f"INSERT SOME CONGRATULATIONS TO {winner_username}",
+            font=("Comic Sans MS", 42),
+        ).pack()
