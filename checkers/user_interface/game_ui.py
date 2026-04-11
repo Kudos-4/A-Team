@@ -1,6 +1,7 @@
 from typing import Optional, Any
 from enum import StrEnum, auto
 from pathlib import Path
+import itertools
 
 from PIL import Image, ImageTk
 import tkinter as tk
@@ -9,7 +10,7 @@ from checkers.constants.colors import ColorID, Color
 from checkers.user_interface.screen import Screen
 from checkers.game.game import Game
 from checkers.game.board import Tile
-from checkers.game.pieces import King
+from checkers.game.pieces import Piece, King
 from checkers.auth import auth_logic
 
 ASSET_DIRECTORY = Path("checkers") / "user_interface" / "assets"
@@ -73,7 +74,7 @@ class GameScreen(Screen):
         if self.gamemode_type.get() == GameMode.PVP:
             self.prompt_player2_username()
         self.prompt_whos_first()
-        self.update_turn()
+        self.update_turn_ui()
         self.configure(background=Color.CHARCOAL)
         self.init_game_labels()
         self.init_board()
@@ -223,8 +224,16 @@ class GameScreen(Screen):
         if not valid_move_made:
             return
         # Log movement to list here
-        self.move_piece(original_tile, tile)
-        self.update_turn()
+        self.move_and_log_piece(original_tile, tile)
+        self.update_turn_ui()
+
+        # (Un)highlight forced moves
+        # 2 lazy to do highlighting logic
+        default_button_color = self.tile_buttons[0][0]["bg"]
+        for button in itertools.chain.from_iterable(self.tile_buttons):
+            button["bg"] = button["activebackground"] = default_button_color
+        for forced_position in self.game.get_all_jumps(self.game.turn):
+            self.toggle_highlighting(forced_position, False, "red")
 
         if (winner := self.game.get_game_winner()) is not None:
             self.clear_screen()
@@ -275,6 +284,7 @@ class GameScreen(Screen):
     def toggle_highlighting(
         self,
         position: tuple[int, int],
+        include_piece_moves: bool = True,
         piece_highlight: str = "lime green",
         moveset_color: str = "yellow",
     ) -> None:
@@ -284,6 +294,8 @@ class GameScreen(Screen):
         main_button = self.tile_buttons[row][col]
         self._toggle_tile_highlight(main_button, piece_highlight)
         # Highlight main piece's moves
+        if not include_piece_moves:
+            return
         main_piece = self.game._board[position]
         self.piece_moves = self.game.get_valid_moves(main_piece)
         for move_row, move_col in self.piece_moves:
@@ -297,7 +309,7 @@ class GameScreen(Screen):
             highlight_color = static_button["bg"]
         button["bg"] = button["activebackground"] = highlight_color
 
-    def move_piece(self, old_tile: Tile, new_tile: Tile) -> None:
+    def move_and_log_piece(self, old_tile: Tile, new_tile: Tile) -> None:
         self.game.move_piece(old_tile.position, new_tile.position)
         # Update tiles
         self.update_image(old_tile)
@@ -315,7 +327,7 @@ class GameScreen(Screen):
         button = self.tile_buttons[row][col]
         button["image"] = self.get_image_from_(tile)
 
-    def update_turn(self) -> None:
+    def update_turn_ui(self) -> None:
         """Read game state's turn and updates turn UI accordingly"""
         username = self.get_username_by_color(self.game.turn)
         color = "BLACK" if self.game.turn == ColorID.DARK else "WHITE"

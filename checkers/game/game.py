@@ -126,7 +126,8 @@ class Game:
     def get_all_jumps(
         self, color: ColorID
     ) -> dict[tuple[int, int], dict[tuple[int, int], Piece]]:
-        #Returns all available jumps for a given color. If one exists, player must take it
+        """Returns all available jump positions for a given color. 
+        If one exists, show possible destinations and pieces it'll take"""
         jumps = {}
         pieces = (self._dark_pieces if color == ColorID.DARK
                   else self._light_pieces)
