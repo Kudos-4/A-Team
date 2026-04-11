@@ -2,6 +2,7 @@ from typing import Optional, Any
 from enum import StrEnum, auto
 from pathlib import Path
 import itertools
+from datetime import datetime
 
 from PIL import Image, ImageTk
 import tkinter as tk
@@ -10,7 +11,7 @@ from checkers.constants.colors import ColorID, Color
 from checkers.user_interface.screen import Screen
 from checkers.game.game import Game
 from checkers.game.board import Tile
-from checkers.game.pieces import Piece, King
+from checkers.game.pieces import King
 from checkers.auth import auth_logic
 
 ASSET_DIRECTORY = Path("checkers") / "user_interface" / "assets"
@@ -78,6 +79,7 @@ class GameScreen(Screen):
         self.configure(background=Color.CHARCOAL)
         self.init_game_labels()
         self.init_board()
+        self.start_time = datetime.now()
 
     def prompt_gamemode(self) -> None:
         """Create UI for selecting gamemode. When player clicks on button
@@ -182,6 +184,13 @@ class GameScreen(Screen):
     def init_game_labels(self) -> None:
         tk.Label(self, text="Current Turn:").pack(anchor="nw")
         tk.Label(self, textvariable=self.turn).pack(anchor="nw")
+        tk.Button(self, text="DRAW", command=self.end_in_draw).pack(anchor="e")
+
+    def end_in_draw(self) -> None:
+        if self.logs:
+            self.save_results_txt(None)
+        self.clear_screen()
+        self.show_end_screen(None)
 
     def init_board(self) -> None:
         """Creates board visuals and each tiles' functions"""
@@ -235,15 +244,17 @@ class GameScreen(Screen):
         for forced_position in self.game.get_all_jumps(self.game.turn):
             self.toggle_highlighting(forced_position, False, "red")
 
-        if (winner := self.game.get_game_winner()) is not None:
-            self.clear_screen()
-            self["bg"] = self.default_window_color
-            self.show_game_over_screen(winner)
+        if (winner := self.game.get_game_winner()) is None:
+            return
+        winner_username = self.get_username_by_color(winner)
+        self.clear_screen()
+        self.save_results_txt(winner_username)
+        self.show_end_screen(winner_username)
 
     def get_new_selected_state(
         self, tile: Tile, valid_move_made: bool
     ) -> Optional[Tile]:
-        """Updates the state of the selected tile and its highlighting."""
+        """Updates the state of the selected tile."""
         if valid_move_made:
             return None
         if not tile.piece or tile.piece.color != self.game.turn:
@@ -259,6 +270,8 @@ class GameScreen(Screen):
             return tile
 
     def update_tile_highlights(self, original_tile: Optional[Tile]) -> None:
+        """Compare with the new updated button press to show any movements
+        for a piece it (may have) selected."""
         # Valid move made
         if original_tile and not self.selected_tile:
             self.toggle_highlighting(original_tile.position)
@@ -293,6 +306,7 @@ class GameScreen(Screen):
         row, col = position
         main_button = self.tile_buttons[row][col]
         self._toggle_tile_highlight(main_button, piece_highlight)
+
         # Highlight main piece's moves
         if not include_piece_moves:
             return
@@ -310,6 +324,7 @@ class GameScreen(Screen):
         button["bg"] = button["activebackground"] = highlight_color
 
     def move_and_log_piece(self, old_tile: Tile, new_tile: Tile) -> None:
+        """Update internal state and records movements and captures"""
         self.game.move_piece(old_tile.position, new_tile.position)
         # Update tiles
         self.update_image(old_tile)
@@ -323,14 +338,15 @@ class GameScreen(Screen):
         self.logs.append(move)
 
     def update_image(self, tile: Tile) -> None:
+        """Called each turn to update UI board state."""
         row, col = tile.position
         button = self.tile_buttons[row][col]
         button["image"] = self.get_image_from_(tile)
 
     def update_turn_ui(self) -> None:
-        """Read game state's turn and updates turn UI accordingly"""
-        username = self.get_username_by_color(self.game.turn)
+        """Read game's turn state and updates turn UI accordingly."""
         color = "BLACK" if self.game.turn == ColorID.DARK else "WHITE"
+        username = self.get_username_by_color(self.game.turn)
         self.turn.set(f"{color} ({username})")
 
     def get_username_by_color(self, color: ColorID) -> str:
@@ -342,13 +358,32 @@ class GameScreen(Screen):
             else self.player2_username
         )
 
-    def show_game_over_screen(self, winner: ColorID) -> None:
-        winner_username = self.get_username_by_color(winner)
+    def save_results_txt(self, winner: Optional[str]) -> None:
+        if not winner:
+            outcome = "Draw"
+        else:
+            outcome = "Win" if winner == self.player1_username else "Loss"
+
+        result = {
+            "Date": self.start_time.strftime("%Y-%m-%d"),
+            "Time": self.start_time.strftime("%H:%M:%S"),
+            "Result": outcome,
+            "Total Moves": len(self.logs),
+            "Move Record": self.logs,
+        }
+
+    def show_end_screen(self, winner: Optional[str]) -> None:
+        if winner:
+            winner_text = f"INSERT SOME CONGRATULATIONS TO {winner}"
+        else:
+            winner_text = f"Game ended in a draw after {len(self.logs)} moves."
+
+        self["bg"] = self.default_window_color
         frame = tk.Frame(self)
         frame.pack()
         tk.Label(
             frame,
-            text=f"INSERT SOME CONGRATULATIONS TO {winner_username}",
+            text=winner_text,
             font=("Comic Sans MS", 42),
         ).pack()
         tk.Button(
