@@ -123,7 +123,9 @@ class Game:
         # Use forced moves if any, else return regular moves
         return forced_moves or regular_moves
 
-    def get_all_jumps(self, color: ColorID) -> dict:
+    def get_all_jumps(
+        self, color: ColorID
+    ) -> dict[tuple[int, int], dict[tuple[int, int], Piece]]:
         #Returns all available jumps for a given color. If one exists, player must take it
         jumps = {}
         pieces = (self._dark_pieces if color == ColorID.DARK

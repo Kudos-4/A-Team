@@ -1,5 +1,5 @@
+from typing import Optional, Any
 from enum import StrEnum, auto
-from typing import Optional
 from pathlib import Path
 
 from PIL import Image, ImageTk
@@ -9,7 +9,7 @@ from checkers.constants.colors import ColorID, Color
 from checkers.user_interface.screen import Screen
 from checkers.game.game import Game
 from checkers.game.board import Tile
-from checkers.game.pieces import Piece, King
+from checkers.game.pieces import King
 from checkers.auth import auth_logic
 
 ASSET_DIRECTORY = Path("checkers") / "user_interface" / "assets"
@@ -23,22 +23,22 @@ class GameMode(StrEnum):
 class GameScreen(Screen):
     def __init__(self, player1_username: str) -> None:
         super().__init__()
+        self.default_window_color = self.cget("bg")
 
         self.player1_username = player1_username
-        self.player2_username = tk.StringVar()
-        self.dark_piece_player = tk.StringVar()
-        self.gamemode_type = tk.StringVar()
+        self.player2_username: str
+        self.dark_piece_player: tk.StringVar
+        self.gamemode_type: tk.StringVar
 
         self.board_size = (8, 8)
-        self.game = Game(self.board_size)
-        self.icons: dict[str, ImageTk.PhotoImage] = self.initialize_icons()
+        self.game: Game
+        self.icons = self.initialize_icons()
 
-        self.tile_buttons: list[list[tk.Button]] = []
-        self.board_frame: tk.Frame
-        self.turn_var: tk.StringVar
-        self.selected_tile: Optional[Tile] = None
-        self.piece_jumps: dict[tuple[int, int], Optional[Piece]] = {}
-        self.logs: list[str] = []
+        self.tile_buttons: list[list[tk.Button]]
+        self.turn: tk.StringVar
+        self.selected_tile: Optional[Tile]
+        self.piece_moves: dict[tuple[int, int], Any]
+        self.logs: list[str]
 
     def initialize_icons(self) -> dict[str, ImageTk.PhotoImage]:
         filepaths = {
@@ -57,12 +57,23 @@ class GameScreen(Screen):
         return {key: ImageTk.PhotoImage(image) for key, image in scaled_images}
 
     def run(self) -> None:
+        self.clear_screen()
+        self["bg"] = self.default_window_color
+        self.player2_username = "CPU"
+        self.dark_piece_player = tk.StringVar()
+        self.gamemode_type = tk.StringVar()
+        self.game = Game(self.board_size)
+        self.tile_buttons = []
+        self.turn = tk.StringVar()
+        self.selected_tile = None
+        self.piece_moves = {}
+        self.logs = []
+
         self.prompt_gamemode()
         if self.gamemode_type.get() == GameMode.PVP:
             self.prompt_player2_username()
-        else:
-            self.player2_username.set("CPU")
         self.prompt_whos_first()
+        self.update_turn()
         self.configure(background=Color.CHARCOAL)
         self.init_game_labels()
         self.init_board()
@@ -107,12 +118,13 @@ class GameScreen(Screen):
             font=("Arial", 28, "bold"),
         ).pack(pady=20, anchor="center")
 
-        username_flag = tk.BooleanVar()
+        username = tk.StringVar()
+        valid_username = tk.BooleanVar()
         error_var = tk.StringVar()
 
         tk.Entry(
             frame,
-            textvariable=self.player2_username,
+            textvariable=username,
             font=("Arial", 18),
             width=28,
         ).pack()
@@ -120,21 +132,24 @@ class GameScreen(Screen):
         tk.Button(
             frame,
             text="Submit username",
-            command=lambda: self.handle_username(username_flag, error_var),
+            command=lambda: self.handle_username(username, valid_username, error_var),
         ).pack()
 
         tk.Label(frame, textvariable=error_var, font=("Arial", 18)).pack()
 
-        self.wait_variable(username_flag)
+        self.wait_variable(valid_username)
         self.clear_screen()
 
-    def handle_username(self, flag: tk.BooleanVar, error_var: tk.StringVar) -> None:
+    def handle_username(
+        self, username: tk.StringVar, flag: tk.BooleanVar, error_var: tk.StringVar
+    ) -> None:
         """Checks if input meets minimum requirements,
         notifies if it doesn't and boolean flag if met."""
-        error_msg = auth_logic.validate_username(self.player2_username.get())
+        error_msg = auth_logic.validate_username(username.get())
         if error_msg:
             error_var.set(error_msg)
             return
+        self.player2_username = username.get()
         flag.set(True)
 
     def prompt_whos_first(self) -> None:
@@ -155,29 +170,27 @@ class GameScreen(Screen):
         ).pack(pady=20, anchor="center")
         tk.Button(
             frame,
-            text=self.player2_username.get(),
+            text=self.player2_username,
             font=("Arial", 18),
-            command=lambda: self.dark_piece_player.set(self.player2_username.get()),
+            command=lambda: self.dark_piece_player.set(self.player2_username),
         ).pack(pady=20, anchor="center")
 
         self.wait_variable(self.dark_piece_player)
         self.clear_screen()
 
     def init_game_labels(self) -> None:
-        self.turn_var = tk.StringVar()
-        self.update_turn()
         tk.Label(self, text="Current Turn:").pack(anchor="nw")
-        tk.Label(self, textvariable=self.turn_var).pack(anchor="nw")
+        tk.Label(self, textvariable=self.turn).pack(anchor="nw")
 
     def init_board(self) -> None:
         """Creates board visuals and each tiles' functions"""
-        self.board_frame = tk.Frame(self)
-        self.board_frame.place(relx=0.5, rely=0.5, anchor="center")
+        board_frame = tk.Frame(self)
+        board_frame.place(relx=0.5, rely=0.5, anchor="center")
         for row in self.game._board._board:
             current_row: list[tk.Button] = []
             for tile in row:
                 button = tk.Button(
-                    self.board_frame,
+                    board_frame,
                     image=self.get_image_from_(tile),
                     command=lambda position=tile.position: self.tile_clicked(position),
                 )
@@ -205,22 +218,17 @@ class GameScreen(Screen):
             and self.selected_tile.piece
             and self.game.can_move_to(self.selected_tile.position, position)
         )
-        forced_move_exists = bool(
-            tile.piece and any(self.game.get_valid_moves(tile.piece).values())
-        )
         self.selected_tile = self.get_new_selected_state(tile, valid_move_made)
         self.update_tile_highlights(original_tile)
         if not valid_move_made:
             return
-        if forced_move_exists:
-            # Set state of forced move UI here
-            pass
         # Log movement to list here
         self.move_piece(original_tile, tile)
         self.update_turn()
 
         if (winner := self.game.get_game_winner()) is not None:
             self.clear_screen()
+            self["bg"] = self.default_window_color
             self.show_game_over_screen(winner)
 
     def get_new_selected_state(
@@ -277,8 +285,8 @@ class GameScreen(Screen):
         self._toggle_tile_highlight(main_button, piece_highlight)
         # Highlight main piece's moves
         main_piece = self.game._board[position]
-        self.piece_jumps = self.game.get_valid_moves(main_piece)
-        for move_row, move_col in self.piece_jumps:
+        self.piece_moves = self.game.get_valid_moves(main_piece)
+        for move_row, move_col in self.piece_moves:
             move_button = self.tile_buttons[move_row][move_col]
             self._toggle_tile_highlight(move_button, moveset_color)
 
@@ -294,7 +302,7 @@ class GameScreen(Screen):
         # Update tiles
         self.update_image(old_tile)
         self.update_image(new_tile)
-        if captured_piece := self.piece_jumps[new_tile.position]:
+        if captured_piece := self.piece_moves[new_tile.position]:
             captured_tile = self.game._board._tile_at(captured_piece.position)
             self.update_image(captured_tile)
         # Log move
@@ -311,7 +319,7 @@ class GameScreen(Screen):
         """Read game state's turn and updates turn UI accordingly"""
         username = self.get_username_by_color(self.game.turn)
         color = "BLACK" if self.game.turn == ColorID.DARK else "WHITE"
-        self.turn_var.set(f"{color} ({username})")
+        self.turn.set(f"{color} ({username})")
 
     def get_username_by_color(self, color: ColorID) -> str:
         player1_is_dark = self.player1_username == self.dark_piece_player.get()
@@ -319,15 +327,27 @@ class GameScreen(Screen):
         return (
             self.player1_username
             if player1_is_dark == color_is_dark
-            else self.player2_username.get()
+            else self.player2_username
         )
 
     def show_game_over_screen(self, winner: ColorID) -> None:
         winner_username = self.get_username_by_color(winner)
-        self.frame = tk.Frame()
+        frame = tk.Frame(self)
+        frame.pack()
         tk.Label(
-            self,
-            pady=100,
+            frame,
             text=f"INSERT SOME CONGRATULATIONS TO {winner_username}",
             font=("Comic Sans MS", 42),
+        ).pack()
+        tk.Button(
+            frame,
+            text="START NEW ROUND",
+            font=("Comic Sans MS", 32),
+            command=self.run,
+        ).pack()
+        tk.Button(
+            frame,
+            text="RETURN TO MENU",
+            font=("Comic Sans MS", 32),
+            command=self.destroy,
         ).pack()
