@@ -7,7 +7,7 @@ from checkers.user_interface.screen import Screen
 from checkers.user_interface.auth_ui import AuthUI
 from checkers.user_interface.game_ui import GameScreen
 from checkers.user_interface.game_history_ui import GameHistoryScreen
-
+from checkers.auth.database import get_user_id
 
 class CheckersUserInterface(tk.Tk):
     def __init__(self, resolution: tuple[int, int]) -> None:
@@ -20,7 +20,8 @@ class CheckersUserInterface(tk.Tk):
 
         # Track logged-in user
         self.current_user: Optional[str] = None
-
+        self.current_user_id: Optional[int] = None
+        
         # Clock
         self._datetime_var = tk.StringVar()
         self.tick_datetime()
@@ -36,6 +37,7 @@ class CheckersUserInterface(tk.Tk):
         Called by AuthUI when login succeeds -> show main menu.
         """
         self.current_user = username
+        self.current_user_id = get_user_id(username)
         self.main_menu()
 
     def main_menu(self) -> None:
@@ -123,7 +125,7 @@ class CheckersUserInterface(tk.Tk):
     def open_game_history(self) -> None:
         """Opens the game history screen in a new window."""
         window_name = "Game History"
-        history_window = self.switch_to_new_window(GameHistoryScreen, window_name)
+        history_window = self.switch_to_new_window(GameHistoryScreen, window_name, user_id=self.current_user_id)
         history_window.run()
         self.wait_window(history_window)
         self.wm_deiconify()
@@ -134,6 +136,7 @@ class CheckersUserInterface(tk.Tk):
             GameScreen,
             "🦅AMERICAN CHECKERS RAHHHHH🔫 GOD BLESS THIS COUNTRAAAY🛐 O(∩_∩)O" + " NEW YORK PIZZA" * 100,
             player1_username=self.current_user,
+            user_id=self.current_user_id
         )
         game_window.run()
         self.wait_window(game_window)
