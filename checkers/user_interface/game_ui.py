@@ -14,6 +14,7 @@ from checkers.game.game import Game
 from checkers.game.board import Tile
 from checkers.game.pieces import Piece, King
 from checkers.auth import auth_logic
+from checkers.auth.database import save_game
 
 ASSET_DIRECTORY = Path("checkers") / "user_interface" / "assets"
 GAME_HISTORY_PATH = Path("checkers") / "game_history.json"
@@ -25,11 +26,12 @@ class GameMode(StrEnum):
 
 
 class GameScreen(Screen):
-    def __init__(self, player1_username: str) -> None:
+    def __init__(self, player1_username: str, user_id: int) -> None:
         super().__init__()
         self.default_window_color = self.cget("bg")
 
         self.player1_username = player1_username
+        self.user_id = user_id
         self.player2_username: str
         self.dark_piece_player: tk.StringVar
         self.gamemode_type: tk.StringVar
@@ -385,6 +387,14 @@ class GameScreen(Screen):
         history.append(result)
         with GAME_HISTORY_PATH.open("w") as file:
             json.dump(history, file, indent=4)
+
+        save_game(
+            user_id=self.user_id,
+            opponent_name=self.player2_username,
+            result=outcome,
+            total_moves=len(self.logs),
+            moves=self.logs,
+        )
 
     def show_end_screen(self, winner: Optional[str]) -> None:
         if winner:
