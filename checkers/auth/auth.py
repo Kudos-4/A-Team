@@ -10,7 +10,6 @@ required install: bcrypt (pip install bcrypt)
 import sqlite3
 import bcrypt
 from checkers.auth.database import get_connection
-from checkers.user_interface import ui
 
 def register_user(username: str, email: str, password: str) -> tuple[bool, str]:
     """
@@ -39,13 +38,13 @@ def register_user(username: str, email: str, password: str) -> tuple[bool, str]:
     finally:
         conn.close()
 
-def login_user(username: str, password: str) -> bool:
+def login_user(username: str, password: str) -> "str | None":
     """Check credentials. Returns True if valid."""
     username = username.lower()
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT pwd_hash FROM users WHERE username = ? OR email = ?",
+        "SELECT username, pwd_hash FROM users WHERE username = ? OR email = ?",
         (username, username)
     )
     row = cursor.fetchone()
