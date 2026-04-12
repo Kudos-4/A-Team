@@ -69,6 +69,36 @@ def init_db() -> None:
         )
         conn.commit()
         conn.close()
+
+    def get_game_history(user_id: int) -> list[dict]:
+    """Return all games for the given user, sort by newest"""
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT opponent_name, result, total_moves, played_at, record_file"
+        " FROM games WHERE user_id = ? ORDER BY played_at DESC",
+        (user_id,),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+
+    history = []
+    for row in rows:
+        played_at = row["played_at"] or ""
+        if " " in played_at:
+            date_part, time_part = played_at.split(" ", 1)
+        else:
+            date_part, time_part = played_at, ""
+        history.append({
+            "date": date_part,
+            "time": time_part,
+            "opponent": row["opponent_name"],
+            "result": row["result"],
+            "total_moves": row["total_moves"],
+            "move_record_path": row["record_file"] or "",
+        })
+    return history
     
 
     conn.commit()
