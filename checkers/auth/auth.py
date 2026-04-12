@@ -51,5 +51,7 @@ def login_user(username: str, password: str) -> "str | None":
     conn.close()
 
     if not row:
-        return False
-    return bcrypt.checkpw(password.encode(), row[0].encode())
+        return None
+    if bcrypt.checkpw(password.encode(), row[1].encode()):
+        return row[0]
+    return None
