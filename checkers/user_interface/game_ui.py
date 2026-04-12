@@ -63,7 +63,7 @@ class GameScreen(Screen):
     def run(self) -> None:
         self.clear_screen()
         self["bg"] = self.default_window_color
-        self.player2_username = "CPU"
+        self.player2_username = "Computer"
         self.dark_piece_player = tk.StringVar()
         self.gamemode_type = tk.StringVar()
         self.game = Game(self.board_size)
@@ -335,7 +335,7 @@ class GameScreen(Screen):
         if captured_piece := self.piece_moves[new_tile.position]:
             captured_tile = self.game._board._tile_at(captured_piece.position)
             self.update_image(captured_tile)
-            
+
         # Log move
         move_type = "x" if captured_piece else "-"
         move = f"{old_tile.notation}{move_type}{new_tile.notation}"
@@ -371,6 +371,7 @@ class GameScreen(Screen):
         result = {
             "Date": self.start_date.strftime("%Y-%m-%d"),
             "Time": self.start_date.strftime("%H:%M:%S"),
+            "Opponent": self.player2_username,
             "Result": outcome,
             "Total Moves": len(self.logs),
             "Move Record": self.logs,
@@ -384,7 +385,6 @@ class GameScreen(Screen):
         history.append(result)
         with GAME_HISTORY_PATH.open("w") as file:
             json.dump(history, file, indent=4)
-
 
     def show_end_screen(self, winner: Optional[str]) -> None:
         if winner:
