@@ -263,7 +263,7 @@ class AuthUI:
         if success:
             self._failed_attempts = 0  # reset on successful login
             self._login_error_var.set("")
-            self._on_login_success(username)  # hand control back to ui.py
+            self._on_login_success(success)  # hand control back to ui.py
         else:
             self._failed_attempts += 1
             remaining = self.MAX_ATTEMPTS - self._failed_attempts
