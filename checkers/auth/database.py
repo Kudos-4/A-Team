@@ -67,7 +67,7 @@ def save_game(
     conn = get_connection()
     conn.execute(
         "INSERT INTO games (user_id, opponent_name, result, total_moves, played_at, record_file)"
-        " VALUES (?, ?, ?, ?, ?)",
+        " VALUES (?, ?, ?, ?, ?, ?)",
         (user_id, opponent_name, result, total_moves, played_at, json.dumps(moves)),
     )
     conn.commit()
