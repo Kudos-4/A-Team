@@ -72,7 +72,7 @@ class GameHistoryScreen(Screen): # Displays a list of past games in a table form
         """
         Placeholder method to fetch game history from database.
         """
-       return get_game_history(self.user_id)
+        return get_game_history(self.user_id)
 
 
     def _show_no_history_message(self, parent: tk.Frame) -> None: # AC-4: Display message when no game history is available.
