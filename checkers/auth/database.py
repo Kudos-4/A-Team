@@ -41,6 +41,8 @@ def init_db() -> None:
             FOREIGN KEY (user_id) REFERENCES users(id)
         )
     """)
+    conn.commit()
+    conn.close()
 
 # fetch userid from current username for future use
 def get_user_id(username: str) -> Optional[int]:
@@ -63,9 +65,9 @@ def save_game(
     """Insert a completed game record into the games table."""
     conn = get_connection()
     conn.execute(
-        "INSERT INTO games (user_id, opponent_name, result, total_moves, record_file)"
+        "INSERT INTO games (user_id, opponent_name, result, total_moves, played_at, record_file)"
         " VALUES (?, ?, ?, ?, ?)",
-        (user_id, opponent_name, result, total_moves, json.dumps(moves)),
+        (user_id, opponent_name, result, total_moves, played_at, json.dumps(moves)),
     )
     conn.commit()
     conn.close()
@@ -100,7 +102,3 @@ def get_game_history(user_id: int) -> list[dict]:
             "move_record_path": row["record_file"] or "",
         })
     return history
-    
-
-    conn.commit()
-    conn.close()
