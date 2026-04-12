@@ -60,6 +60,7 @@ def save_game(
     opponent_name: str,
     result: str,
     total_moves: int,
+    played_at: str,
     moves: list[str],
 ) -> None:
     """Insert a completed game record into the games table."""
