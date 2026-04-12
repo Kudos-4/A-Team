@@ -394,6 +394,7 @@ class GameScreen(Screen):
             result=outcome,
             total_moves=len(self.logs),
             moves=self.logs,
+            played_at=self.stat_date.strftime("%Y-%m-%d %H:%M:%S"),
         )
 
     def show_end_screen(self, winner: Optional[str]) -> None:
