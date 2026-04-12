@@ -1,13 +1,16 @@
+import json
 import tkinter as tk
 from tkinter import ttk
 from checkers.user_interface.screen import Screen
+from checkers.auth.database import get_game_history
 
 
 class GameHistoryScreen(Screen): # Displays a list of past games in a table format.
 
 
-    def __init__(self) -> None:
+    def __init__(self, user_id: int) -> None:
         super().__init__()
+        self.user_id = user_id
         self.configure(background="#f0f0f0") #color
 
     def run(self) -> None: #Initialize and display the game history screen.
@@ -68,46 +71,9 @@ class GameHistoryScreen(Screen): # Displays a list of past games in a table form
     def _fetch_game_history(self) -> list[dict]:
         """
         Placeholder method to fetch game history from database.
-        This will be implemented by another developer.
-
-        Returns:
-            List of game dictionaries with keys:
-            - date: str (e.g., "2024-03-15")
-            - time: str (e.g., "14:30:25")
-            - opponent: str (opponent's username)
-            - result: str ("Win", "Loss", or "Draw")
-            - total_moves: int
-            - move_record_path: str (path to .txt file)
         """
-        # For UI demonstration, return sample data:
-        return [ #change this when actually hooking it up, this is just so we can see how it will look like with real data
-            {
-                "date": "2024-03-15",
-                "time": "14:30:25",
-                "opponent": "Lebron (The Goat)",
-                "result": "Win",
-                "total_moves": 42,
-                "move_record_path": "games/game_001.txt",
-            },
-            {
-                "date": "2024-03-14",
-                "time": "19:15:10",
-                "opponent": "Nik (the chud)",
-                "result": "Loss",
-                "total_moves": 38,
-                "move_record_path": "games/game_002.txt",
-            },
-            {
-                "date": "2024-03-13",
-                "time": "10:22:45",
-                "opponent": "Lebaby",
-                "result": "Draw",
-                "total_moves": 56,
-                "move_record_path": "games/game_003.txt",
-            },
-        ]
-        # Return empty list for no history:
-        # return []
+       return get_game_history(self.user_id)
+
 
     def _show_no_history_message(self, parent: tk.Frame) -> None: # AC-4: Display message when no game history is available.
 
