@@ -1,103 +1,161 @@
-import json
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
+from datetime import datetime
+from typing import Any
+
 from checkers.user_interface.screen import Screen
 from checkers.auth.database import get_game_history
 
 
-class GameHistoryScreen(Screen): # Displays a list of past games in a table format.
-
+class GameHistoryScreen(Screen):
+    """Displays the user's past games in a styled, scrollable table."""
 
     def __init__(self, user_id: int) -> None:
         super().__init__()
         self.user_id = user_id
-        self.configure(background="#f0f0f0") #color
 
-    def run(self) -> None: #Initialize and display the game history screen.
+        # Theme palette
+        self.BG_APP = "#0f172a"
+        self.BG_TOPBAR = "#111827"
+        self.BG_CARD = "#1e293b"
+        self.BG_HEADER = "#334155"
+        self.BG_ROW_A = "#243447"
+        self.BG_ROW_B = "#1f2f42"
+        self.BG_BUTTON = "#334155"
+        self.BG_BUTTON_HOVER = "#475569"
+        self.FG_TEXT = "#f8fafc"
+        self.FG_MUTED = "#94a3b8"
+        self.FG_ACCENT = "#f43f5e"
+
+        self.configure(background=self.BG_APP)
+
+    def run(self) -> None:
+        """Initialize and render the game history screen."""
+        self.clear_screen()
+        self.configure(background=self.BG_APP)
+
+        self._create_top_bar()
         self._create_header()
         self._create_game_history_table()
         self._create_back_button()
 
-    def _create_header(self) -> None: # Create the header section with title."""
-        header_frame = tk.Frame(self, background="#2c3e50") #color
-        header_frame.pack(fill="x", pady=(0, 20))
+    def _create_top_bar(self) -> None:
+        """Create a slim top bar for visual consistency."""
+        top_bar = tk.Frame(self, bg=self.BG_TOPBAR)
+        top_bar.pack(fill="x", padx=16, pady=(10, 0))
+
+        tk.Label(
+            top_bar,
+            text="Checkers Pro",
+            font=("Arial", 11, "bold"),
+            fg=self.FG_MUTED,
+            bg=self.BG_TOPBAR,
+            padx=8,
+            pady=8,
+        ).pack(side="left")
+
+    def _create_header(self) -> None:
+        """Create the title section."""
+        header_frame = tk.Frame(self, background=self.BG_APP)
+        header_frame.pack(fill="x", pady=(18, 6))
 
         tk.Label(
             header_frame,
             text="GAME HISTORY",
-            font=("Comic Sans MS", 36, "bold"), # Idk if we keep this as comin sans or not xddd
-            fg="white",
-            bg="#2c3e50",
-            pady=20,
+            font=("Arial", 34, "bold"),
+            fg=self.FG_ACCENT,
+            bg=self.BG_APP,
         ).pack()
 
-    def _create_game_history_table(self) -> None: #Create the main table displaying game history.
-        # Includes Date, Time, Opponent, Result, Total Moves, and Move Record button
-        # Container for the table
-        table_frame = tk.Frame(self, background="#f0f0f0")
-        table_frame.pack(fill="both", expand=True, padx=40, pady=20)
+        tk.Label(
+            header_frame,
+            text="Review your recent matches and results",
+            font=("Arial", 12),
+            fg=self.FG_MUTED,
+            bg=self.BG_APP,
+        ).pack(pady=(6, 0))
 
-        # Create a canvas with scrollbar for scrolling capability
-        canvas = tk.Canvas(table_frame, background="#f0f0f0", highlightthickness=0)
-        scrollbar = ttk.Scrollbar(
-            table_frame, orient="vertical", command=canvas.yview
+    def _create_game_history_table(self) -> None:
+        """Create a scrollable table for game history."""
+        card = tk.Frame(self, bg=self.BG_CARD, padx=16, pady=16)
+        card.pack(fill="both", expand=True, padx=28, pady=16)
+
+        table_frame = tk.Frame(card, background=self.BG_CARD)
+        table_frame.pack(fill="both", expand=True)
+
+        canvas = tk.Canvas(
+            table_frame,
+            background=self.BG_CARD,
+            highlightthickness=0,
+            bd=0,
         )
-        # Single shared grid frame — headers and rows all go in here so columns align
-        scrollable_frame = tk.Frame(canvas, background="#f0f0f0")
+        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=canvas.yview)
 
+        scrollable_frame = tk.Frame(canvas, background=self.BG_CARD)
+
+        # Keep canvas scroll region in sync with content size
         scrollable_frame.bind(
             "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all")),
+            lambda _e: canvas.configure(scrollregion=canvas.bbox("all")),
         )
 
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
 
-        # Pack canvas and scrollbar
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Fetch game history data (placeholder - will be implemented by another developer)
+        # Enable mouse wheel scrolling while cursor is over table
+        canvas.bind_all(
+            "<MouseWheel>",
+            lambda e: canvas.yview_scroll(int(-1 * (e.delta / 120)), "units"),
+        )
+
         game_history = self._fetch_game_history()
 
         if not game_history:
-            # AC-4: No game history available message
             self._show_no_history_message(scrollable_frame)
-        else:
-            # AC-2: Display game history table with headers and rows in the same grid
-            self._create_table_headers(scrollable_frame)
-            self._populate_game_rows(scrollable_frame, game_history)
+            return
 
-    def _fetch_game_history(self) -> list[dict]:
-        """
-        Placeholder method to fetch game history from database.
-        """
-        return get_game_history(self.user_id)
+        self._create_table_headers(scrollable_frame)
+        self._populate_game_rows(scrollable_frame, game_history)
 
+        # Improve column stretch behavior
+        for col in range(6):
+            scrollable_frame.grid_columnconfigure(col, weight=1)
 
-    def _show_no_history_message(self, parent: tk.Frame) -> None: # AC-4: Display message when no game history is available.
+    def _fetch_game_history(self) -> list[dict[str, Any]]:
+        """Fetch game history records from database layer."""
+        try:
+            data = get_game_history(self.user_id)
+            return data if isinstance(data, list) else []
+        except Exception:
+            # Fail-safe path to keep UI responsive even if DB call fails
+            return []
 
-        message_frame = tk.Frame(parent, background="#f0f0f0")
-        message_frame.pack(expand=True, fill="both", pady=100)
+    def _show_no_history_message(self, parent: tk.Frame) -> None:
+        """Show a friendly empty-state message when no history exists."""
+        message_frame = tk.Frame(parent, background=self.BG_CARD)
+        message_frame.pack(expand=True, fill="both", pady=90)
 
         tk.Label(
             message_frame,
             text="No game history available",
-            font=("Arial", 28, "bold"),
-            fg="#7f8c8d",
-            bg="#f0f0f0",
-        ).pack(pady=20)
+            font=("Arial", 24, "bold"),
+            fg=self.FG_TEXT,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 10))
 
         tk.Label(
             message_frame,
-            text="Play some games to see your history here!",
-            font=("Arial", 18),
-            fg="#95a5a6",
-            bg="#f0f0f0",
+            text="Play some games and your records will appear here.",
+            font=("Arial", 14),
+            fg=self.FG_MUTED,
+            bg=self.BG_CARD,
         ).pack()
 
-    def _create_table_headers(self, parent: tk.Frame) -> None: #Create the table header row with column names.
-        # Header labels go directly into the shared grid (row 0) alongside data rows
+    def _create_table_headers(self, parent: tk.Frame) -> None:
+        """Create the table header row."""
         columns = [
             ("Date", 0),
             ("Time", 1),
@@ -111,149 +169,198 @@ class GameHistoryScreen(Screen): # Displays a list of past games in a table form
             tk.Label(
                 parent,
                 text=col_text,
-                font=("Arial", 14, "bold"),
-                fg="white",
-                bg="#34495e",
+                font=("Arial", 13, "bold"),
+                fg=self.FG_TEXT,
+                bg=self.BG_HEADER,
                 padx=10,
                 pady=10,
                 anchor="w",
-            ).grid(row=0, column=col_idx, sticky="ew", padx=(0, 2))
+            ).grid(row=0, column=col_idx, sticky="ew", padx=(0, 2), pady=(0, 2))
 
     def _populate_game_rows(
-        self, parent: tk.Frame, game_history: list[dict]
-    ) -> None: # Populate the table with game history rows.
-        # AC-2: Each row shares the same grid as the headers, guaranteeing column alignment.
+        self, parent: tk.Frame, game_history: list[dict[str, Any]]
+    ) -> None:
+        """Populate rows using normalized game data."""
+        for idx, raw_game in enumerate(game_history):
+            game = self._normalize_game_record(raw_game)
 
-        for idx, game in enumerate(game_history):
-            # Alternate row colors for better readability
-            bg_color = "#ecf0f1" if idx % 2 == 0 else "#ffffff"
-            grid_row = idx + 1  # Row 0 is the header
+            bg_color = self.BG_ROW_A if idx % 2 == 0 else self.BG_ROW_B
+            grid_row = idx + 1
 
-            # Date
             tk.Label(
                 parent,
                 text=game["date"],
-                font=("Arial", 12),
+                font=("Arial", 11),
+                fg=self.FG_TEXT,
                 bg=bg_color,
                 padx=10,
-                pady=15,
+                pady=12,
                 anchor="w",
-            ).grid(row=grid_row, column=0, sticky="ew", padx=(0, 2))
+            ).grid(row=grid_row, column=0, sticky="ew", padx=(0, 2), pady=(0, 2))
 
-            # Time
             tk.Label(
                 parent,
                 text=game["time"],
-                font=("Arial", 12),
+                font=("Arial", 11),
+                fg=self.FG_TEXT,
                 bg=bg_color,
                 padx=10,
-                pady=15,
+                pady=12,
                 anchor="w",
-            ).grid(row=grid_row, column=1, sticky="ew", padx=(0, 2))
+            ).grid(row=grid_row, column=1, sticky="ew", padx=(0, 2), pady=(0, 2))
 
-            # Opponent
             tk.Label(
                 parent,
                 text=game["opponent"],
-                font=("Arial", 12, "bold"),
+                font=("Arial", 11, "bold"),
+                fg=self.FG_TEXT,
                 bg=bg_color,
                 padx=10,
-                pady=15,
+                pady=12,
                 anchor="w",
-            ).grid(row=grid_row, column=2, sticky="ew", padx=(0, 2))
+            ).grid(row=grid_row, column=2, sticky="ew", padx=(0, 2), pady=(0, 2))
 
-            # Result with color coding
-            result_color = self._get_result_color(game["result"])
             tk.Label(
                 parent,
                 text=game["result"],
-                font=("Arial", 12, "bold"),
-                fg=result_color,
+                font=("Arial", 11, "bold"),
+                fg=self._get_result_color(game["result"]),
                 bg=bg_color,
                 padx=10,
-                pady=15,
+                pady=12,
                 anchor="w",
-            ).grid(row=grid_row, column=3, sticky="ew", padx=(0, 2))
+            ).grid(row=grid_row, column=3, sticky="ew", padx=(0, 2), pady=(0, 2))
 
-            # Total Moves
             tk.Label(
                 parent,
                 text=str(game["total_moves"]),
-                font=("Arial", 12),
+                font=("Arial", 11),
+                fg=self.FG_TEXT,
                 bg=bg_color,
                 padx=10,
-                pady=15,
+                pady=12,
                 anchor="w",
-            ).grid(row=grid_row, column=4, sticky="ew", padx=(0, 2))
+            ).grid(row=grid_row, column=4, sticky="ew", padx=(0, 2), pady=(0, 2))
 
-            # Move Record Button
-            # AC-3: Button to open the move record file
-            btn_frame = tk.Frame(parent, bg=bg_color, padx=10, pady=8)
-            btn_frame.grid(row=grid_row, column=5, sticky="ew", padx=(0, 2))
+            btn_frame = tk.Frame(parent, bg=bg_color, padx=10, pady=6)
+            btn_frame.grid(
+                row=grid_row, column=5, sticky="ew", padx=(0, 2), pady=(0, 2)
+            )
 
             move_record_btn = tk.Button(
                 btn_frame,
-                text="Move Record",
-                font=("Arial", 11, "bold"),
-                bg="#3498db",
+                text="View Moves",
+                font=("Arial", 10, "bold"),
+                bg="#3b82f6",
                 fg="white",
-                activebackground="#2980b9",
+                activebackground="#2563eb",
                 activeforeground="white",
-                relief="raised",
-                borderwidth=2,
+                relief="flat",
+                bd=0,
                 cursor="hand2",
-                command=lambda path=game["move_record_path"]: self._open_move_record(
-                    path
+                command=lambda path=game["move_record_path"], moves=game["moves"]: (
+                    self._open_move_record(path, moves)
                 ),
+                padx=10,
+                pady=6,
             )
             move_record_btn.pack(anchor="w")
 
-    def _get_result_color(self, result: str) -> str:
-        """Return color based on game result."""
-        color_map = {
-            "Win": "#27ae60",  # Green
-            "Loss": "#e74c3c",  # Red
-            "Draw": "#f39c12",  # Orange
+    def _normalize_game_record(self, game: dict[str, Any]) -> dict[str, Any]:
+        """
+        Normalize possible DB/file formats into one consistent structure.
+        Supports:
+        - date/time
+        - Date/Time
+        - played_at (YYYY-mm-dd HH:MM:SS)
+        """
+        date = str(game.get("date", "") or game.get("Date", ""))
+        time = str(game.get("time", "") or game.get("Time", ""))
+
+        played_at = game.get("played_at")
+        if (not date or not time) and played_at:
+            try:
+                dt = datetime.strptime(str(played_at), "%Y-%m-%d %H:%M:%S")
+                date = date or dt.strftime("%Y-%m-%d")
+                time = time or dt.strftime("%H:%M:%S")
+            except ValueError:
+                pass
+
+        opponent = str(game.get("opponent", "") or game.get("Opponent", "Unknown"))
+        result = str(game.get("result", "") or game.get("Result", "Unknown"))
+        total_moves = game.get("total_moves", game.get("Total Moves", 0))
+        moves = game.get("moves", game.get("Move Record", []))
+        move_record_path = str(game.get("move_record_path", ""))
+
+        return {
+            "date": date or "-",
+            "time": time or "-",
+            "opponent": opponent,
+            "result": result,
+            "total_moves": total_moves if total_moves is not None else 0,
+            "moves": moves if isinstance(moves, list) else [],
+            "move_record_path": move_record_path,
         }
-        return color_map.get(result, "#000000")
 
-    def _open_move_record(self, file_path: str) -> None:
-        """
-        AC-3: Open and display the move record file for a specific game.
-        This will be implemented by another developer.
+    def _get_result_color(self, result: str) -> str:
+        """Return text color based on result."""
+        normalized = result.lower().strip()
+        if normalized == "win":
+            return "#22c55e"
+        if normalized == "loss":
+            return "#ef4444"
+        if normalized == "draw":
+            return "#f59e0b"
+        return self.FG_TEXT
 
-        Args:
-            file_path: Path to the .txt file containing the move record
+    def _open_move_record(self, file_path: str, moves: list[Any]) -> None:
         """
-        # TODO: Implement file reading and display in a new window or text viewer
-        print(f"Opening move record file: {file_path}")
-        # Placeholder: Show a message box indicating the feature is not yet implemented
-        from tkinter import messagebox
+        Open move record detail.
+        If file path exists, show placeholder info.
+        If moves list exists, show list in dialog.
+        """
+        # Keep behavior simple and robust for current project stage
+        if moves:
+            preview = "\n".join(str(m) for m in moves[:40])
+            if len(moves) > 40:
+                preview += "\n..."
+            messagebox.showinfo("Move Record", f"Moves:\n{preview}")
+            return
+
+        if file_path:
+            messagebox.showinfo(
+                "Move Record",
+                f"Move record path:\n{file_path}\n\nDetailed file viewer can be added next.",
+            )
+            return
 
         messagebox.showinfo(
-            "Move Record",
-            f"Move record file:\n{file_path}\n\n"
-            "This feature will display the game moves when fully implemented.",
+            "Move Record", "No move record data is available for this game."
         )
 
     def _create_back_button(self) -> None:
-        """Create a back button to return to the main menu."""
-        button_frame = tk.Frame(self, background="#f0f0f0")
-        button_frame.pack(pady=20)
+        """Create a themed back button."""
+        button_frame = tk.Frame(self, background=self.BG_APP)
+        button_frame.pack(pady=(0, 22))
 
         back_button = tk.Button(
             button_frame,
             text="← Back to Main Menu",
-            font=("Arial", 18, "bold"),
-            bg="#95a5a6",
-            fg="white",
-            activebackground="#7f8c8d",
-            activeforeground="white",
-            relief="raised",
-            borderwidth=3,
+            font=("Arial", 14, "bold"),
+            bg=self.BG_BUTTON,
+            fg=self.FG_TEXT,
+            activebackground=self.BG_BUTTON_HOVER,
+            activeforeground=self.FG_TEXT,
+            relief="flat",
+            bd=0,
             cursor="hand2",
-            padx=30,
-            pady=15,
+            padx=26,
+            pady=12,
             command=self.destroy,
         )
         back_button.pack()
+
+        back_button.bind(
+            "<Enter>", lambda _e: back_button.configure(bg=self.BG_BUTTON_HOVER)
+        )
+        back_button.bind("<Leave>", lambda _e: back_button.configure(bg=self.BG_BUTTON))

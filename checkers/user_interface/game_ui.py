@@ -1,14 +1,13 @@
-from typing import Optional, Any
+from typing import Optional
 from enum import StrEnum, auto
 from datetime import datetime
 from pathlib import Path
-import itertools
-import json
 
 from PIL import Image, ImageTk
+from tkinter import messagebox
 import tkinter as tk
 
-from checkers.constants.colors import ColorID, Color
+from checkers.constants.colors import ColorID
 from checkers.user_interface.screen import Screen
 from checkers.game.game import Game
 from checkers.game.board import Tile
@@ -26,27 +25,56 @@ class GameMode(StrEnum):
 
 
 class GameScreen(Screen):
+    """Main game UI screen for checkers."""
+
     def __init__(self, player1_username: str, user_id: int) -> None:
         super().__init__()
-        self.default_window_color = self.cget("bg")
 
+        # Theme colors
+        self.BG_APP = "#0f172a"
+        self.BG_TOPBAR = "#111827"
+        self.BG_CARD = "#1e293b"
+        self.BG_PANEL = "#233247"
+        self.BG_BUTTON = "#334155"
+        self.BG_BUTTON_HOVER = "#475569"
+        self.BG_DANGER = "#f43f5e"
+        self.BG_DANGER_HOVER = "#e11d48"
+        self.FG_TEXT = "#f8fafc"
+        self.FG_MUTED = "#94a3b8"
+        self.FG_ACCENT = "#f43f5e"
+
+        # Highlight colors
+        self.HL_SELECTED = "#3b82f6"
+        self.HL_MOVES = "#60a5fa"
+        self.HL_FORCED = "#f59e0b"
+
+        # Session/game metadata
         self.player1_username = player1_username
         self.user_id = user_id
-        self.player2_username: str
-        self.dark_piece_player: tk.StringVar
-        self.gamemode_type: tk.StringVar
+        self.player2_username: str = "Computer"
 
+        # Setup state vars
+        self.dark_piece_player = tk.StringVar()
+        self.gamemode_type = tk.StringVar()
+        self.turn = tk.StringVar()
+
+        # Game engine and board state
         self.board_size = (8, 8)
         self.game: Game
         self.icons = self.initialize_icons()
+        self.tile_buttons: list[list[tk.Button]] = []
+        self.tile_default_bg: dict[tuple[int, int], str] = {}
 
-        self.tile_buttons: list[list[tk.Button]]
-        self.turn: tk.StringVar
-        self.selected_tile: Optional[Tile]
-        self.piece_moves: dict[tuple[int, int], Piece] | dict[tuple[int, int], None]
-        self.logs: list[str]
+        self.selected_tile: Optional[Tile] = None
+        self.piece_moves: dict[tuple[int, int], Piece] | dict[tuple[int, int], None] = {}
+        self.logs: list[str] = []
+        self.start_date: datetime
+
+        # Lockout state is managed by auth flow, not here
+        self.configure(bg=self.BG_APP)
 
     def initialize_icons(self) -> dict[str, ImageTk.PhotoImage]:
+        """Load and scale all board and piece images."""
         filepaths = {
             "light-tile": ASSET_DIRECTORY / "LightTile.png",
             "dark-tile": ASSET_DIRECTORY / "DarkTile.png",
@@ -55,22 +83,26 @@ class GameScreen(Screen):
             "light-pawn": ASSET_DIRECTORY / "LightPawn.png",
             "light-king": ASSET_DIRECTORY / "LightKing.png",
         }
-        scaled_images = (
-            # Original 120x120
-            (key, Image.open(path).resize((100, 100)))
-            for key, path in filepaths.items()
-        )
-        return {key: ImageTk.PhotoImage(image) for key, image in scaled_images}
+
+        icons: dict[str, ImageTk.PhotoImage] = {}
+        for key, path in filepaths.items():
+            image = Image.open(path).resize((92, 92))
+            icons[key] = ImageTk.PhotoImage(image)
+        return icons
 
     def run(self) -> None:
+        """Initialize a new game session and render UI."""
         self.clear_screen()
-        self["bg"] = self.default_window_color
+        self.configure(bg=self.BG_APP)
+
         self.player2_username = "Computer"
-        self.dark_piece_player = tk.StringVar()
-        self.gamemode_type = tk.StringVar()
+        self.dark_piece_player.set("")
+        self.gamemode_type.set("")
+        self.turn.set("")
+
         self.game = Game(self.board_size)
         self.tile_buttons = []
-        self.turn = tk.StringVar()
+        self.tile_default_bg = {}
         self.selected_tile = None
         self.piece_moves = {}
         self.logs = []
@@ -79,283 +111,438 @@ class GameScreen(Screen):
         if self.gamemode_type.get() == GameMode.PVP:
             self.prompt_player2_username()
         self.prompt_whos_first()
-        self.update_turn_ui()
-        self.configure(background=Color.CHARCOAL)
-        self.init_game_labels()
-        self.init_board()
+
         self.start_date = datetime.now()
+        self._build_game_layout()
+        self.update_turn_ui()
+        self._show_forced_moves()
+
+    # -------------------------------------------------------------------------
+    # Pre-game prompts
+    # -------------------------------------------------------------------------
 
     def prompt_gamemode(self) -> None:
-        """Create UI for selecting gamemode. When player clicks on button
-        modify mutable gamemode_type to update state and continue to start_game()"""
+        """Prompt player to select game mode."""
+        self.clear_screen()
+        self.configure(bg=self.BG_APP)
 
-        for label in ("How would you like to play", "Select a gamemode:"):
-            tk.Label(
-                self,
-                text=label,
-                font=("Arial", 42),
-            ).pack(pady=75)
+        card = self._create_center_card()
 
-        button_frame = tk.Frame(self)
-        options = (
-            ("Player vs Player", GameMode.PVP),
-            ("Player vs Computer", GameMode.PVE),
-        )
-        for option, gamemode in options:
-            new_button = tk.Button(
-                button_frame,
-                text=option,
-                font=("Arial", 46),
-                # mode=gamemode required or else both point to same reference
-                # gamemode was recently assigned (PVE)
-                command=lambda mode=gamemode: self.gamemode_type.set(mode),
-            )
-            new_button.grid(pady=20, sticky="nsew")
-        button_frame.pack()
+        tk.Label(
+            card,
+            text="SELECT MODE",
+            font=("Arial", 30, "bold"),
+            fg=self.FG_ACCENT,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 8))
+
+        tk.Label(
+            card,
+            text="How would you like to play?",
+            font=("Arial", 12),
+            fg=self.FG_MUTED,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 18))
+
+        self._themed_button(
+            card,
+            text="Player vs Player",
+            command=lambda: self.gamemode_type.set(GameMode.PVP),
+        ).pack(fill="x", pady=6)
+
+        self._themed_button(
+            card,
+            text="Player vs Computer",
+            command=lambda: self.gamemode_type.set(GameMode.PVE),
+        ).pack(fill="x", pady=6)
 
         self.wait_variable(self.gamemode_type)
-        self.clear_screen()
 
     def prompt_player2_username(self) -> None:
-        frame = tk.Frame(self)
-        frame.pack()
+        """Prompt player 2 username for PvP mode."""
+        self.clear_screen()
+        self.configure(bg=self.BG_APP)
+
+        card = self._create_center_card()
+
         tk.Label(
-            frame,
-            text="Enter player 2's username below",
+            card,
+            text="PLAYER 2",
             font=("Arial", 28, "bold"),
-        ).pack(pady=20, anchor="center")
+            fg=self.FG_ACCENT,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 8))
+
+        tk.Label(
+            card,
+            text="Enter player 2's username",
+            font=("Arial", 12),
+            fg=self.FG_MUTED,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 16))
 
         username = tk.StringVar()
-        valid_username = tk.BooleanVar()
-        error_var = tk.StringVar()
+        valid_username = tk.BooleanVar(value=False)
+        error_var = tk.StringVar(value="")
 
-        tk.Entry(
-            frame,
+        entry = tk.Entry(
+            card,
             textvariable=username,
-            font=("Arial", 18),
+            font=("Arial", 14),
+            bg=self.BG_PANEL,
+            fg=self.FG_TEXT,
+            insertbackground=self.FG_TEXT,
+            bd=0,
+            highlightthickness=2,
+            highlightbackground=self.BG_CARD,
+            highlightcolor=self.FG_ACCENT,
             width=28,
-        ).pack()
+        )
+        entry.pack(ipady=8, pady=(0, 10))
+        entry.focus_set()
 
-        tk.Button(
-            frame,
-            text="Submit username",
+        tk.Label(
+            card,
+            textvariable=error_var,
+            font=("Arial", 10),
+            fg="#ef4444",
+            bg=self.BG_CARD,
+            wraplength=420,
+        ).pack(pady=(0, 10))
+
+        self._themed_button(
+            card,
+            text="Confirm Username",
             command=lambda: self.handle_username(username, valid_username, error_var),
-        ).pack()
-
-        tk.Label(frame, textvariable=error_var, font=("Arial", 18)).pack()
+        ).pack(fill="x")
 
         self.wait_variable(valid_username)
-        self.clear_screen()
 
     def handle_username(
         self, username: tk.StringVar, flag: tk.BooleanVar, error_var: tk.StringVar
     ) -> None:
-        """Checks if input meets minimum requirements,
-        notifies if it doesn't and boolean flag if met."""
-        error_msg = auth_logic.validate_username(username.get())
+        """Validate player 2 username and continue only if valid."""
+        error_msg = auth_logic.validate_username(username.get().strip())
         if error_msg:
             error_var.set(error_msg)
             return
-        self.player2_username = username.get()
+        self.player2_username = username.get().strip()
         flag.set(True)
 
     def prompt_whos_first(self) -> None:
-        """Ask who plays the first move (as black)."""
-        frame = tk.Frame(self)
-        frame.pack()
-        tk.Label(
-            frame,
-            text="Who plays first as black?",
-            font=("Arial", 28, "bold"),
-        ).pack(pady=20, anchor="center")
+        """Prompt who plays first as dark."""
+        self.clear_screen()
+        self.configure(bg=self.BG_APP)
 
-        tk.Button(
-            frame,
+        card = self._create_center_card()
+
+        tk.Label(
+            card,
+            text="FIRST MOVE",
+            font=("Arial", 28, "bold"),
+            fg=self.FG_ACCENT,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 8))
+
+        tk.Label(
+            card,
+            text="Who starts as DARK?",
+            font=("Arial", 12),
+            fg=self.FG_MUTED,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 16))
+
+        self._themed_button(
+            card,
             text=self.player1_username,
-            font=("Arial", 18),
             command=lambda: self.dark_piece_player.set(self.player1_username),
-        ).pack(pady=20, anchor="center")
-        tk.Button(
-            frame,
+        ).pack(fill="x", pady=6)
+
+        self._themed_button(
+            card,
             text=self.player2_username,
-            font=("Arial", 18),
             command=lambda: self.dark_piece_player.set(self.player2_username),
-        ).pack(pady=20, anchor="center")
+        ).pack(fill="x", pady=6)
 
         self.wait_variable(self.dark_piece_player)
+
+    # -------------------------------------------------------------------------
+    # Main game layout
+    # -------------------------------------------------------------------------
+
+    def _build_game_layout(self) -> None:
+        """Build main game screen: top bar, side panel, and board."""
         self.clear_screen()
+        self.configure(bg=self.BG_APP)
 
-    def init_game_labels(self) -> None:
-        tk.Label(self, text="Current Turn:").pack(anchor="nw")
-        tk.Label(self, textvariable=self.turn).pack(anchor="nw")
-        tk.Button(self, text="DRAW", command=self.end_in_draw).pack(anchor="e")
+        # Top bar
+        top_bar = tk.Frame(self, bg=self.BG_TOPBAR)
+        top_bar.pack(fill="x", padx=14, pady=(10, 0))
 
-    def end_in_draw(self) -> None:
-        if self.logs:
-            self.save_results_txt(None)
-        self.clear_screen()
-        self.show_end_screen(None)
+        tk.Label(
+            top_bar,
+            text=f"{self.player1_username} vs {self.player2_username}",
+            font=("Arial", 12, "bold"),
+            fg=self.FG_MUTED,
+            bg=self.BG_TOPBAR,
+            padx=10,
+            pady=8,
+        ).pack(side="left")
 
-    def init_board(self) -> None:
-        """Creates board visuals and each tiles' functions"""
-        board_frame = tk.Frame(self)
-        board_frame.place(relx=0.5, rely=0.5, anchor="center")
-        for row in self.game._board._board:
+        tk.Label(
+            top_bar,
+            textvariable=self.turn,
+            font=("Arial", 12, "bold"),
+            fg=self.FG_TEXT,
+            bg=self.BG_TOPBAR,
+            padx=10,
+            pady=8,
+        ).pack(side="right")
+
+        # Main body
+        body = tk.Frame(self, bg=self.BG_APP)
+        body.pack(fill="both", expand=True, padx=18, pady=16)
+
+        # Side panel
+        panel = tk.Frame(body, bg=self.BG_CARD, padx=16, pady=16)
+        panel.pack(side="left", fill="y")
+
+        tk.Label(
+            panel,
+            text="Match Controls",
+            font=("Arial", 14, "bold"),
+            fg=self.FG_ACCENT,
+            bg=self.BG_CARD,
+        ).pack(anchor="w", pady=(0, 12))
+
+        self._themed_button(
+            panel,
+            text="Offer Draw",
+            command=self.end_in_draw,
+            bg=self.BG_BUTTON,
+            hover_bg=self.BG_BUTTON_HOVER,
+        ).pack(fill="x", pady=6)
+
+        self._themed_button(
+            panel,
+            text="Return to Menu",
+            command=self._confirm_exit_match,
+            bg=self.BG_DANGER,
+            hover_bg=self.BG_DANGER_HOVER,
+        ).pack(fill="x", pady=6)
+
+        tk.Label(
+            panel,
+            text="Move Log",
+            font=("Arial", 12, "bold"),
+            fg=self.FG_MUTED,
+            bg=self.BG_CARD,
+        ).pack(anchor="w", pady=(18, 8))
+
+        self.log_text = tk.Text(
+            panel,
+            width=28,
+            height=20,
+            bg=self.BG_PANEL,
+            fg=self.FG_TEXT,
+            insertbackground=self.FG_TEXT,
+            bd=0,
+            relief="flat",
+            padx=10,
+            pady=10,
+            state="disabled",
+            font=("Consolas", 10),
+        )
+        self.log_text.pack(fill="both", expand=False)
+
+        # Board area
+        board_wrap = tk.Frame(body, bg=self.BG_APP)
+        board_wrap.pack(side="left", fill="both", expand=True)
+
+        self._init_board(board_wrap)
+
+    def _init_board(self, parent: tk.Widget) -> None:
+        """Create all board tiles and bind click handlers."""
+        board_frame = tk.Frame(parent, bg=self.BG_APP)
+        board_frame.pack(expand=True)  # 不用 place，避免尺寸计算问题
+
+        self.tile_buttons = []
+        self.tile_default_bg = {}
+
+        # 用固定 8x8 + _tile_at 取格子，避免内部结构差异导致循环空
+        for i in range(8):
             current_row: list[tk.Button] = []
-            for tile in row:
+            for j in range(8):
+                tile = self.game._board._tile_at((i, j))
+
+                base_bg = "#1f2937" if tile.color == ColorID.DARK else "#334155"
+                self.tile_default_bg[(i, j)] = base_bg
+
                 button = tk.Button(
                     board_frame,
                     image=self.get_image_from_(tile),
-                    command=lambda position=tile.position: self.tile_clicked(position),
+                    bg=base_bg,
+                    activebackground=base_bg,
+                    bd=0,
+                    relief="flat",
+                    cursor="hand2",
+                    command=lambda pos=(i, j): self.tile_clicked(pos),
                 )
-                i, j = tile.position
-                button.grid(row=i, column=j)
+                button.grid(row=i, column=j, padx=1, pady=1)
                 current_row.append(button)
             self.tile_buttons.append(current_row)
 
+    # -------------------------------------------------------------------------
+    # Board rendering and interactions
+    # -------------------------------------------------------------------------
+
     def get_image_from_(self, tile: Tile) -> ImageTk.PhotoImage:
+        """Resolve the image for a tile based on piece and tile type."""
         if not tile.piece:
             color = "dark" if tile.color == ColorID.DARK else "light"
-            key = f"{color}-tile"
-            return self.icons[key]
+            return self.icons[f"{color}-tile"]
+
         color = "dark" if tile.piece.color == ColorID.DARK else "light"
         piece_type = "king" if isinstance(tile.piece, King) else "pawn"
-        key = f"{color}-{piece_type}"
-        return self.icons[key]
+        return self.icons[f"{color}-{piece_type}"]
 
     def tile_clicked(self, position: tuple[int, int]) -> None:
-        """Handles essentially every part of the game logic"""
+        """Handle tile click for selection, move, highlights, and game end."""
         tile = self.game._board._tile_at(position)
         original_tile = self.selected_tile
+
         valid_move_made = bool(
             self.selected_tile
             and self.selected_tile.piece
             and self.game.can_move_to(self.selected_tile.position, position)
         )
+
+        # Update selected tile state
         self.selected_tile = self.get_new_selected_state(tile, valid_move_made)
-        self.update_tile_highlights(original_tile)
-        if not valid_move_made:
-            return
-        # Log movement to list here
-        self.move_and_log_piece(original_tile, tile)
-        self.update_turn_ui()
 
-        # (Un)highlight forced moves
-        # 2 lazy to do highlighting logic
-        default_button_color = self.tile_buttons[0][0]["bg"]
-        for button in itertools.chain.from_iterable(self.tile_buttons):
-            button["bg"] = button["activebackground"] = default_button_color
-        for forced_position in self.game.get_all_jumps(self.game.turn):
-            self.toggle_highlighting(forced_position, False, "red")
+        # If a move happened, execute and update board
+        if valid_move_made and original_tile:
+            self.move_and_log_piece(original_tile, tile)
+            self.selected_tile = None
+            self.update_turn_ui()
 
-        if (winner := self.game.get_game_winner()) is None:
-            return
-        winner_username = self.get_username_by_color(winner)
-        self.clear_screen()
-        self.save_results_txt(winner_username)
-        self.show_end_screen(winner_username)
+            winner = self.game.get_game_winner()
+            if winner is not None:
+                winner_username = self.get_username_by_color(winner)
+                self.save_results_txt(winner_username)
+                self.show_end_screen(winner_username)
+                return
+
+        # Refresh highlights every click
+        self._clear_all_highlights()
+        if self.selected_tile:
+            self._highlight_selected_and_moves(self.selected_tile.position)
+
+        # Highlight forced jumps for current player
+        self._show_forced_moves()
 
     def get_new_selected_state(
         self, tile: Tile, valid_move_made: bool
     ) -> Optional[Tile]:
-        """Updates the state of the selected tile."""
+        """Compute new selected tile after a click."""
         if valid_move_made:
             return None
+
+        # Only allow selecting own pieces
         if not tile.piece or tile.piece.color != self.game.turn:
-            # Raise invalid tile message here
             return self.selected_tile
+
+        # If nothing selected yet, select this tile
         if not self.selected_tile:
             return tile
-        # Same tile pressed, deselect
+
+        # Clicking same tile deselects it
         if tile is self.selected_tile:
             return None
-        # Player presses on different piece it owns, switch to it
-        if tile.piece.color == self.selected_tile.piece.color:
+
+        # Clicking another own piece switches selection
+        if (
+            self.selected_tile.piece
+            and tile.piece.color == self.selected_tile.piece.color
+        ):
             return tile
 
-    def update_tile_highlights(self, original_tile: Optional[Tile]) -> None:
-        """Compare with the new updated button press to show any movements
-        for a piece it (may have) selected."""
-        # Valid move made
-        if original_tile and not self.selected_tile:
-            self.toggle_highlighting(original_tile.position)
-        # Invalid move made, do nothing
-        elif original_tile is self.selected_tile:
-            return
-        # Empty selected tile
-        elif not original_tile and self.selected_tile:
-            self.toggle_highlighting(self.selected_tile.position)
-        # Same tile pressed again
-        elif original_tile and original_tile is self.selected_tile:
-            self.toggle_highlighting(original_tile.position)
-        # Player presses on different piece it owns, switch to it
-        elif (
-            self.selected_tile
-            and original_tile.piece
-            and self.selected_tile.piece
-            and original_tile.piece.color == self.selected_tile.piece.color
-        ):
-            self.toggle_highlighting(original_tile.position)
-            self.toggle_highlighting(self.selected_tile.position)
+        return self.selected_tile
 
-    def toggle_highlighting(
-        self,
-        position: tuple[int, int],
-        include_piece_moves: bool = True,
-        piece_highlight: str = "lime green",
-        moveset_color: str = "yellow",
-    ) -> None:
-        """Toggle a tile's and its possible moves' highlight colors"""
-        # Highlight main piece
+    def _highlight_selected_and_moves(self, position: tuple[int, int]) -> None:
+        """Highlight selected piece and all valid target moves."""
         row, col = position
-        main_button = self.tile_buttons[row][col]
-        self._toggle_tile_highlight(main_button, piece_highlight)
+        self._set_tile_bg((row, col), self.HL_SELECTED)
 
-        # Highlight main piece's moves
-        if not include_piece_moves:
-            return
         main_piece = self.game._board[position]
         self.piece_moves = self.game.get_valid_moves(main_piece)
         for move_row, move_col in self.piece_moves:
-            move_button = self.tile_buttons[move_row][move_col]
-            self._toggle_tile_highlight(move_button, moveset_color)
+            self._set_tile_bg((move_row, move_col), self.HL_MOVES)
 
-    def _toggle_tile_highlight(self, button: tk.Button, highlight_color: str) -> None:
-        """Change highlighting using a given tkinter color."""
-        if button["bg"] == highlight_color:
-            static_button = self.tile_buttons[0][0]
-            highlight_color = static_button["bg"]
-        button["bg"] = button["activebackground"] = highlight_color
+    def _show_forced_moves(self) -> None:
+        """Highlight forced jump pieces for current turn."""
+        forced_positions = self.game.get_all_jumps(self.game.turn)
+        for pos in forced_positions:
+            # Do not overwrite currently selected tile color
+            if self.selected_tile and pos == self.selected_tile.position:
+                continue
+            self._set_tile_bg(pos, self.HL_FORCED)
+
+    def _clear_all_highlights(self) -> None:
+        """Restore all tile button backgrounds to default colors."""
+        for i, row in enumerate(self.tile_buttons):
+            for j, button in enumerate(row):
+                base_bg = self.tile_default_bg[(i, j)]
+                button.configure(bg=base_bg, activebackground=base_bg)
+
+    def _set_tile_bg(self, position: tuple[int, int], color: str) -> None:
+        """Set a tile's background highlight color."""
+        row, col = position
+        button = self.tile_buttons[row][col]
+        button.configure(bg=color, activebackground=color)
 
     def move_and_log_piece(self, old_tile: Tile, new_tile: Tile) -> None:
-        """Update internal state and records movements and captures"""
+        """Execute move, update visuals, and append move record."""
         self.game.move_piece(old_tile.position, new_tile.position)
 
-        # Update tiles
+        # Update moved from/to tiles
         self.update_image(old_tile)
         self.update_image(new_tile)
-        if captured_piece := self.piece_moves[new_tile.position]:
+
+        # If capture happened, update captured tile image
+        captured_piece = self.piece_moves.get(new_tile.position)
+        if captured_piece:
             captured_tile = self.game._board._tile_at(captured_piece.position)
             self.update_image(captured_tile)
 
-        # Log move
+        # Log notation
         move_type = "x" if captured_piece else "-"
         move = f"{old_tile.notation}{move_type}{new_tile.notation}"
         self.logs.append(move)
+        self._append_log_line(move)
+
+    def _append_log_line(self, move: str) -> None:
+        """Append one line to side move log."""
+        if not hasattr(self, "log_text"):
+            return
+        self.log_text.configure(state="normal")
+        self.log_text.insert("end", f"{len(self.logs):>3}. {move}\n")
+        self.log_text.see("end")
+        self.log_text.configure(state="disabled")
 
     def update_image(self, tile: Tile) -> None:
-        """Called each turn to update UI board state."""
+        """Refresh one tile image according to current board state."""
         row, col = tile.position
-        button = self.tile_buttons[row][col]
-        button["image"] = self.get_image_from_(tile)
+        self.tile_buttons[row][col]["image"] = self.get_image_from_(tile)
 
     def update_turn_ui(self) -> None:
-        """Read game's turn state and updates turn UI accordingly."""
-        color = "BLACK" if self.game.turn == ColorID.DARK else "WHITE"
+        """Update turn text in top bar."""
+        color_name = "BLACK" if self.game.turn == ColorID.DARK else "WHITE"
         username = self.get_username_by_color(self.game.turn)
-        self.turn.set(f"{color} ({username})")
+        self.turn.set(f"Turn: {color_name} ({username})")
 
     def get_username_by_color(self, color: ColorID) -> str:
+        """Return username by piece color assignment."""
         player1_is_dark = self.player1_username == self.dark_piece_player.get()
         color_is_dark = color == ColorID.DARK
         return (
@@ -364,30 +551,24 @@ class GameScreen(Screen):
             else self.player2_username
         )
 
+    # -------------------------------------------------------------------------
+    # End game and persistence
+    # -------------------------------------------------------------------------
+
+    def end_in_draw(self) -> None:
+        """End game as draw and show final screen."""
+        if self.logs:
+            self.save_results_txt(None)
+        self.show_end_screen(None)
+
     def save_results_txt(self, winner: Optional[str]) -> None:
+        """Persist game result to local JSON and database."""
         if winner:
             outcome = "Win" if winner == self.player1_username else "Loss"
         else:
             outcome = "Draw"
 
-        result = {
-            "Date": self.start_date.strftime("%Y-%m-%d"),
-            "Time": self.start_date.strftime("%H:%M:%S"),
-            "Opponent": self.player2_username,
-            "Result": outcome,
-            "Total Moves": len(self.logs),
-            "Move Record": self.logs,
-        }
-
-        try:
-            with GAME_HISTORY_PATH.open("r") as file:
-                history: list[dict[str, Any]] = json.load(file)
-        except FileNotFoundError:
-            history = []
-        history.append(result)
-        with GAME_HISTORY_PATH.open("w") as file:
-            json.dump(history, file, indent=4)
-
+        # Save database history
         save_game(
             user_id=self.user_id,
             opponent_name=self.player2_username,
@@ -398,28 +579,100 @@ class GameScreen(Screen):
         )
 
     def show_end_screen(self, winner: Optional[str]) -> None:
-        if winner:
-            winner_text = f"INSERT SOME CONGRATULATIONS TO {winner}"
-        else:
-            winner_text = f"Game ended in a draw after {len(self.logs)} moves."
+        """Render final result screen with actions."""
+        self.clear_screen()
+        self.configure(bg=self.BG_APP)
 
-        self["bg"] = self.default_window_color
-        frame = tk.Frame(self)
-        frame.pack()
+        card = self._create_center_card()
+
+        if winner:
+            winner_text = f"🏆 Congratulations, {winner}!"
+            detail_text = f"Game finished in {len(self.logs)} move(s)."
+            color = "#22c55e"
+        else:
+            winner_text = "🤝 Draw!"
+            detail_text = f"Game ended in a draw after {len(self.logs)} move(s)."
+            color = "#f59e0b"
+
         tk.Label(
-            frame,
+            card,
             text=winner_text,
-            font=("Comic Sans MS", 42),
-        ).pack()
-        tk.Button(
-            frame,
-            text="START NEW ROUND",
-            font=("Comic Sans MS", 32),
+            font=("Arial", 28, "bold"),
+            fg=color,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 8))
+
+        tk.Label(
+            card,
+            text=detail_text,
+            font=("Arial", 12),
+            fg=self.FG_MUTED,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 20))
+
+        self._themed_button(
+            card,
+            text="Start New Round",
             command=self.run,
-        ).pack()
-        tk.Button(
-            frame,
-            text="RETURN TO MENU",
-            font=("Comic Sans MS", 32),
+        ).pack(fill="x", pady=6)
+
+        self._themed_button(
+            card,
+            text="Return to Menu",
             command=self.destroy,
-        ).pack()
+            bg=self.BG_DANGER,
+            hover_bg=self.BG_DANGER_HOVER,
+        ).pack(fill="x", pady=6)
+
+    def _confirm_exit_match(self) -> None:
+        """Ask user before leaving an ongoing game."""
+        should_exit = messagebox.askyesno(
+            "Return to Menu",
+            "Are you sure you want to leave this match?\nCurrent progress will be lost.",
+        )
+        if should_exit:
+            self.destroy()
+
+    # -------------------------------------------------------------------------
+    # UI helpers
+    # -------------------------------------------------------------------------
+
+    def _create_center_card(self) -> tk.Frame:
+        """Create a centered card container."""
+        container = tk.Frame(self, bg=self.BG_APP)
+        container.place(relx=0.5, rely=0.5, anchor="center")
+
+        card = tk.Frame(container, bg=self.BG_CARD, padx=36, pady=30)
+        card.pack()
+        return card
+
+    def _themed_button(
+        self,
+        parent: tk.Widget,
+        text: str,
+        command,
+        bg: Optional[str] = None,
+        hover_bg: Optional[str] = None,
+    ) -> tk.Button:
+        """Create a theme-consistent button with hover effect."""
+        base_bg = bg or self.BG_BUTTON
+        over_bg = hover_bg or self.BG_BUTTON_HOVER
+
+        btn = tk.Button(
+            parent,
+            text=text,
+            font=("Arial", 12, "bold"),
+            bg=base_bg,
+            fg=self.FG_TEXT,
+            activebackground=over_bg,
+            activeforeground=self.FG_TEXT,
+            bd=0,
+            relief="flat",
+            cursor="hand2",
+            padx=12,
+            pady=10,
+            command=command,
+        )
+        btn.bind("<Enter>", lambda _e: btn.configure(bg=over_bg))
+        btn.bind("<Leave>", lambda _e: btn.configure(bg=base_bg))
+        return btn

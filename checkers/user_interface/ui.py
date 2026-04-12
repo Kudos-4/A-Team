@@ -1,90 +1,136 @@
 from typing import Callable, Optional
-
 import datetime
 import tkinter as tk
+from tkinter import messagebox
 
 from checkers.user_interface.screen import Screen
 from checkers.user_interface.auth_ui import AuthUI
-from checkers.user_interface.game_ui import GameScreen
-from checkers.user_interface.game_history_ui import GameHistoryScreen
 from checkers.auth.database import get_user_id
+
 
 class CheckersUserInterface(tk.Tk):
     def __init__(self, resolution: tuple[int, int]) -> None:
         super().__init__()
         self.width, self.height = resolution
-        # Geometry takes in a string for resolution
         self.resolution_str = f"{self.width}x{self.height}"
         self.geometry(self.resolution_str)
         self.attributes("-fullscreen", True)
+        self.title("Checkers Pro")
+
+        # App theme colors
+        self.BG_APP = "#0f172a"
+        self.BG_CARD = "#1e293b"
+        self.BG_TOPBAR = "#111827"
+        self.BG_BUTTON = "#334155"
+        self.BG_BUTTON_HOVER = "#475569"
+        self.BG_DANGER = "#f43f5e"
+        self.BG_DANGER_HOVER = "#e11d48"
+        self.FG_TEXT = "#f8fafc"
+        self.FG_MUTED = "#94a3b8"
+        self.FG_ACCENT = "#f43f5e"
+
+        self.configure(bg=self.BG_APP)
 
         # Track logged-in user
         self.current_user: Optional[str] = None
         self.current_user_id: Optional[int] = None
-        
-        # Clock
+
+        # Shared live clock
         self._datetime_var = tk.StringVar()
         self.tick_datetime()
 
-        # Call AuthUI to handle login and register
+        # Authentication UI
         self._auth = AuthUI(self, on_login_success=self.login_success)
-        # Show login screen before main menu
         self._auth.show_login()
 
     def login_success(self, username: str) -> None:
         """
-        Shared with auth_ui.py.
-        Called by AuthUI when login succeeds -> show main menu.
+        Called by AuthUI when login succeeds.
+        Stores user session and opens the main menu.
         """
         self.current_user = username
         self.current_user_id = get_user_id(username)
         self.main_menu()
 
     def main_menu(self) -> None:
-        self.title("Main Menu")  # Window name
+        """Render the main menu screen."""
+        self.title("Checkers Pro - Main Menu")
+        self._clear_root()
+        self.configure(bg=self.BG_APP)
 
-        # Clear any existing widgets (login screen)
-        for widget in self.winfo_children():
-            widget.destroy()
+        # Top bar
+        top_bar = tk.Frame(self, bg=self.BG_TOPBAR)
+        top_bar.pack(fill="x", padx=16, pady=(10, 0))
 
-        # Top bar: datetime (left) | username (right)
-        top_bar = tk.Frame(self)
-        top_bar.pack(fill="x", padx=16, pady=(8, 0))
-
-        # datetime
         tk.Label(
             top_bar,
             textvariable=self._datetime_var,
-            font=("Arial", 16),
+            font=("Arial", 14),
+            fg=self.FG_MUTED,
+            bg=self.BG_TOPBAR,
+            padx=8,
+            pady=8,
             anchor="w",
         ).pack(side="left")
 
-        # username
         tk.Label(
             top_bar,
-            text=f"👤  {self.current_user}",
-            font=("Arial", 16, "bold"),
+            text=f"Player: {self.current_user or 'Unknown'}",
+            font=("Arial", 14, "bold"),
+            fg=self.FG_TEXT,
+            bg=self.BG_TOPBAR,
+            padx=8,
+            pady=8,
             anchor="e",
         ).pack(side="right")
 
-        menu_title_label = tk.Label(
-            self,
-            text="Welcome to Checkers!!( •̀ ω •́ )y",
-            font=("Calibri", 42),
-            pady=10,
-        )
-        menu_title_label.pack()
+        # Center card
+        container = tk.Frame(self, bg=self.BG_APP)
+        container.place(relx=0.5, rely=0.53, anchor="center")
 
-        self.create_menu_buttons(
-            ("NEW GAME", self.open_new_game),
-            ("GAME HISTORY", self.open_game_history),
-            ("LOG OUT", self.handle_logout),
-            ("EXIT", self.destroy),
+        card = tk.Frame(container, bg=self.BG_CARD, padx=42, pady=36)
+        card.pack()
+
+        tk.Label(
+            card,
+            text="CHECKERS PRO",
+            font=("Arial", 34, "bold"),
+            fg=self.FG_ACCENT,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 6))
+
+        tk.Label(
+            card,
+            text="Choose what you want to do",
+            font=("Arial", 12),
+            fg=self.FG_MUTED,
+            bg=self.BG_CARD,
+        ).pack(pady=(0, 26))
+
+        self._create_menu_button(card, "NEW GAME", self.open_new_game).pack(
+            fill="x", pady=8
         )
+        self._create_menu_button(card, "GAME HISTORY", self.open_game_history).pack(
+            fill="x", pady=8
+        )
+        self._create_menu_button(card, "LOG OUT", self.handle_logout).pack(
+            fill="x", pady=8
+        )
+        self._create_menu_button(
+            card,
+            "EXIT",
+            self.destroy,
+            bg=self.BG_DANGER,
+            hover_bg=self.BG_DANGER_HOVER,
+        ).pack(fill="x", pady=(8, 0))
+
+        # Keyboard shortcut
+        self.bind("<Escape>", lambda _e: self.destroy())
 
     def handle_logout(self) -> None:
         """Clear session and return to login screen."""
         self.current_user = None
+        self.current_user_id = None
         self._auth.show_login()
 
     def tick_datetime(self) -> None:
@@ -93,19 +139,37 @@ class CheckersUserInterface(tk.Tk):
         self._datetime_var.set(now)
         self.after(1000, self.tick_datetime)
 
-    def create_menu_buttons(self, *args: tuple[str, Callable]) -> None:
-        """Attaches newly created buttons to button_frame"""
-        button_frame = tk.Frame(self)
-        for button_name, action in args:
-            new_button = tk.Button(
-                button_frame,
-                text=button_name,
-                font=("Arial", 36),
-                command=action,
-            )
-            # Sticky: Alignment (North, South, East, West)
-            new_button.grid(pady=12, sticky="W")
-        button_frame.pack(padx=10, side="left")
+    def _create_menu_button(
+        self,
+        parent: tk.Widget,
+        text: str,
+        command: Callable,
+        bg: Optional[str] = None,
+        hover_bg: Optional[str] = None,
+    ) -> tk.Button:
+        """Create a themed menu button with hover effect."""
+        base_bg = bg or self.BG_BUTTON
+        over_bg = hover_bg or self.BG_BUTTON_HOVER
+
+        button = tk.Button(
+            parent,
+            text=text,
+            font=("Arial", 16, "bold"),
+            bg=base_bg,
+            fg=self.FG_TEXT,
+            activebackground=over_bg,
+            activeforeground=self.FG_TEXT,
+            bd=0,
+            relief="flat",
+            cursor="hand2",
+            padx=16,
+            pady=12,
+            command=command,
+        )
+
+        button.bind("<Enter>", lambda _e: button.configure(bg=over_bg))
+        button.bind("<Leave>", lambda _e: button.configure(bg=base_bg))
+        return button
 
     def switch_to_new_window(
         self,
@@ -114,8 +178,8 @@ class CheckersUserInterface(tk.Tk):
         enable_fullscreen: bool = True,
         **screen_kwargs,
     ) -> Screen:
-        """Hides main menu and creates a new window to work off of."""
-        self.withdraw()  # Hide function
+        """Hide main menu and open a child screen window."""
+        self.withdraw()
         window = screen_type(**screen_kwargs)
         window.title(title)
         window.geometry(self.resolution_str)
@@ -123,21 +187,52 @@ class CheckersUserInterface(tk.Tk):
         return window
 
     def open_game_history(self) -> None:
-        """Opens the game history screen in a new window."""
-        window_name = "Game History"
-        history_window = self.switch_to_new_window(GameHistoryScreen, window_name, user_id=self.current_user_id)
+        """Open the game history screen."""
+        if self.current_user_id is None:
+            messagebox.showerror(
+                "Error", "User session is invalid. Please log in again."
+            )
+            self.handle_logout()
+            return
+
+        # Lazy import to avoid circular import at module load time
+        from checkers.user_interface.game_history_ui import GameHistoryScreen
+
+        history_window = self.switch_to_new_window(
+            GameHistoryScreen,
+            title="Game History",
+            user_id=self.current_user_id,
+        )
         history_window.run()
         self.wait_window(history_window)
         self.wm_deiconify()
+        self.main_menu()
 
     def open_new_game(self) -> None:
-        """Opens a new window instance of a checkers game."""
+        """Open a new game screen."""
+        if self.current_user_id is None or self.current_user is None:
+            messagebox.showerror(
+                "Error", "User session is invalid. Please log in again."
+            )
+            self.handle_logout()
+            return
+
+        # Lazy import to avoid circular import at module load time
+        from checkers.user_interface.game_ui import GameScreen
+
         game_window = self.switch_to_new_window(
             GameScreen,
-            "🦅AMERICAN CHECKERS RAHHHHH🔫 GOD BLESS THIS COUNTRAAAY🛐 O(∩_∩)O" + " NEW YORK PIZZA" * 100,
+            title="Checkers Pro - New Game",
             player1_username=self.current_user,
-            user_id=self.current_user_id
+            user_id=self.current_user_id,
         )
         game_window.run()
         self.wait_window(game_window)
         self.wm_deiconify()
+        self.main_menu()
+
+    def _clear_root(self) -> None:
+        """Remove all widgets from the root window."""
+        self.unbind("<Escape>")
+        for widget in self.winfo_children():
+            widget.destroy()
