@@ -1,8 +1,9 @@
 from typing import Optional, Any
 from enum import StrEnum, auto
+from datetime import datetime
 from pathlib import Path
 import itertools
-from datetime import datetime
+import json
 
 from PIL import Image, ImageTk
 import tkinter as tk
@@ -11,10 +12,11 @@ from checkers.constants.colors import ColorID, Color
 from checkers.user_interface.screen import Screen
 from checkers.game.game import Game
 from checkers.game.board import Tile
-from checkers.game.pieces import King
+from checkers.game.pieces import Piece, King
 from checkers.auth import auth_logic
 
 ASSET_DIRECTORY = Path("checkers") / "user_interface" / "assets"
+GAME_HISTORY_PATH = Path("checkers") / "game_history.json"
 
 
 class GameMode(StrEnum):
@@ -39,7 +41,7 @@ class GameScreen(Screen):
         self.tile_buttons: list[list[tk.Button]]
         self.turn: tk.StringVar
         self.selected_tile: Optional[Tile]
-        self.piece_moves: dict[tuple[int, int], Any]
+        self.piece_moves: dict[tuple[int, int], Piece] | dict[tuple[int, int], None]
         self.logs: list[str]
 
     def initialize_icons(self) -> dict[str, ImageTk.PhotoImage]:
@@ -79,7 +81,7 @@ class GameScreen(Screen):
         self.configure(background=Color.CHARCOAL)
         self.init_game_labels()
         self.init_board()
-        self.start_time = datetime.now()
+        self.start_date = datetime.now()
 
     def prompt_gamemode(self) -> None:
         """Create UI for selecting gamemode. When player clicks on button
@@ -326,12 +328,14 @@ class GameScreen(Screen):
     def move_and_log_piece(self, old_tile: Tile, new_tile: Tile) -> None:
         """Update internal state and records movements and captures"""
         self.game.move_piece(old_tile.position, new_tile.position)
+
         # Update tiles
         self.update_image(old_tile)
         self.update_image(new_tile)
         if captured_piece := self.piece_moves[new_tile.position]:
             captured_tile = self.game._board._tile_at(captured_piece.position)
             self.update_image(captured_tile)
+            
         # Log move
         move_type = "x" if captured_piece else "-"
         move = f"{old_tile.notation}{move_type}{new_tile.notation}"
@@ -359,18 +363,28 @@ class GameScreen(Screen):
         )
 
     def save_results_txt(self, winner: Optional[str]) -> None:
-        if not winner:
-            outcome = "Draw"
-        else:
+        if winner:
             outcome = "Win" if winner == self.player1_username else "Loss"
+        else:
+            outcome = "Draw"
 
         result = {
-            "Date": self.start_time.strftime("%Y-%m-%d"),
-            "Time": self.start_time.strftime("%H:%M:%S"),
+            "Date": self.start_date.strftime("%Y-%m-%d"),
+            "Time": self.start_date.strftime("%H:%M:%S"),
             "Result": outcome,
             "Total Moves": len(self.logs),
             "Move Record": self.logs,
         }
+
+        try:
+            with GAME_HISTORY_PATH.open("r") as file:
+                history: list[dict[str, Any]] = json.load(file)
+        except FileNotFoundError:
+            history = []
+        history.append(result)
+        with GAME_HISTORY_PATH.open("w") as file:
+            json.dump(history, file, indent=4)
+
 
     def show_end_screen(self, winner: Optional[str]) -> None:
         if winner:
