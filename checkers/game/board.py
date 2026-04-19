@@ -68,8 +68,7 @@ class Board:
         for i in range(self._rows):
             color_list = odd if i % 2 else even
             new_row = [
-                Tile(position=(i, j), color=color)
-                for j, color in enumerate(color_list)
+                Tile(position=(i, j), color=color) for j, color in enumerate(color_list)
             ]
             board.append(new_row)
         return board
@@ -96,20 +95,17 @@ class Board:
         current_tile.piece = None
         new_tile.piece.position = new_position
 
-    def update_piece(
-            self, position: tuple[int, int], new_piece: Piece
-        ) -> None:
+    def update_piece(self, position: tuple[int, int], new_piece: Piece) -> None:
         tile = self._tile_at(position)
         if tile.piece is None:
             raise ValueError("No piece at position to replace.")
         tile.piece = new_piece
+
     def remove_piece(self, position: tuple[int, int]) -> None:
         tile = self._tile_at(position)
         if tile.piece is None:
             raise ValueError("No piece at position to be removed")
         tile.piece = None
-    
-    
 
     def _tile_at(self, position: tuple[int, int]) -> Tile:
         row, col = position
@@ -119,9 +115,14 @@ class Board:
         return self._tile_at(position).piece
 
     def __getitem__(self, position: tuple[int, int]) -> Optional[Piece]:
-        """Same as piece_at(); board.piece_at(position) == board[position]"""
-        row, col = position
-        return self._board[row][col].piece
+        """Same as piece_at()"""
+        return self.piece_at(position)
+    
+    def get_color_at(self, position: tuple[int, int]) -> ColorID:
+        return self._tile_at(position).color
+    
+    def get_notation_at(self, position: tuple[int, int]) -> Optional[int]:
+        return self._tile_at(position).notation
 
     @property
     def rows(self) -> int:

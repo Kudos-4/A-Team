@@ -1,3 +1,5 @@
+"""Game UI that sets a GameMode and update itself after each input."""
+
 from typing import Optional
 from enum import StrEnum, auto
 from datetime import datetime
@@ -10,8 +12,9 @@ import tkinter as tk
 from checkers.constants.colors import ColorID
 from checkers.user_interface.screen import Screen
 from checkers.game.game import Game
-from checkers.game.board import Tile
-from checkers.game.pieces import Piece, King
+from checkers.game.pieces import King
+from checkers.gamemodes.gamemode import GameMode
+from checkers.gamemodes.pvp import PvPGameMode
 from checkers.auth import auth_logic
 from checkers.auth.database import save_game
 
@@ -19,7 +22,7 @@ ASSET_DIRECTORY = Path("checkers") / "user_interface" / "assets"
 GAME_HISTORY_PATH = Path("checkers") / "game_history.json"
 
 
-class GameMode(StrEnum):
+class GameModeType(StrEnum):
     PVP = auto()
     PVE = auto()
 
@@ -61,12 +64,11 @@ class GameScreen(Screen):
         # Game engine and board state
         self.board_size = (8, 8)
         self.game: Game
+        self.game_handler: GameMode
         self.icons = self.initialize_icons()
         self.tile_buttons: list[list[tk.Button]] = []
         self.tile_default_bg: dict[tuple[int, int], str] = {}
 
-        self.selected_tile: Optional[Tile] = None
-        self.piece_moves: dict[tuple[int, int], Piece] | dict[tuple[int, int], None] = {}
         self.logs: list[str] = []
         self.start_date: datetime
 
@@ -103,13 +105,15 @@ class GameScreen(Screen):
         self.game = Game(self.board_size)
         self.tile_buttons = []
         self.tile_default_bg = {}
-        self.selected_tile = None
-        self.piece_moves = {}
         self.logs = []
 
         self.prompt_gamemode()
-        if self.gamemode_type.get() == GameMode.PVP:
+        if self.gamemode_type.get() == GameModeType.PVP:
             self.prompt_player2_username()
+            self.game_handler = PvPGameMode(self.game)
+        else:
+            # self.game_handler = PvEGameMode(self.game)
+            raise NotImplementedError("No PvE gamemode implemented.")
         self.prompt_whos_first()
 
         self.start_date = datetime.now()
@@ -147,13 +151,13 @@ class GameScreen(Screen):
         self._themed_button(
             card,
             text="Player vs Player",
-            command=lambda: self.gamemode_type.set(GameMode.PVP),
+            command=lambda: self.gamemode_type.set(GameModeType.PVP),
         ).pack(fill="x", pady=6)
 
         self._themed_button(
             card,
             text="Player vs Computer",
-            command=lambda: self.gamemode_type.set(GameMode.PVE),
+            command=lambda: self.gamemode_type.set(GameModeType.PVE),
         ).pack(fill="x", pady=6)
 
         self.wait_variable(self.gamemode_type)
@@ -373,14 +377,16 @@ class GameScreen(Screen):
         for i in range(8):
             current_row: list[tk.Button] = []
             for j in range(8):
-                tile = self.game._board._tile_at((i, j))
+                # tile = self.game._board._tile_at((i, j))
+                position = (i, j)
+                tile_color = self.game.get_tile_color_at(position)
 
-                base_bg = "#1f2937" if tile.color == ColorID.DARK else "#334155"
+                base_bg = "#1f2937" if tile_color == ColorID.DARK else "#334155"
                 self.tile_default_bg[(i, j)] = base_bg
 
                 button = tk.Button(
                     board_frame,
-                    image=self.get_image_from_(tile),
+                    image=self._get_image(position),
                     bg=base_bg,
                     activebackground=base_bg,
                     bd=0,
@@ -396,97 +402,79 @@ class GameScreen(Screen):
     # Board rendering and interactions
     # -------------------------------------------------------------------------
 
-    def get_image_from_(self, tile: Tile) -> ImageTk.PhotoImage:
+    def _get_image(self, position: tuple[int, int]) -> ImageTk.PhotoImage:
         """Resolve the image for a tile based on piece and tile type."""
-        if not tile.piece:
-            color = "dark" if tile.color == ColorID.DARK else "light"
-            return self.icons[f"{color}-tile"]
+        if piece := self.game.get_piece_at(position):
+            color = "dark" if piece.color == ColorID.DARK else "light"
+            piece_type = "king" if isinstance(piece, King) else "pawn"
+            return self.icons[f"{color}-{piece_type}"]
 
-        color = "dark" if tile.piece.color == ColorID.DARK else "light"
-        piece_type = "king" if isinstance(tile.piece, King) else "pawn"
-        return self.icons[f"{color}-{piece_type}"]
+        tile_color = self.game.get_tile_color_at(position)
+        color = "dark" if tile_color == ColorID.DARK else "light"
+        return self.icons[f"{color}-tile"]
 
     def tile_clicked(self, position: tuple[int, int]) -> None:
-        """Handle tile click for selection, move, highlights, and game end."""
-        tile = self.game._board._tile_at(position)
-        original_tile = self.selected_tile
+        """Send user input to GameMode handler, and update UI afterwards"""
+        self.game_handler.tile_pressed(position)  # Updates game state
 
-        valid_move_made = bool(
-            self.selected_tile
-            and self.selected_tile.piece
-            and self.game.can_move_to(self.selected_tile.position, position)
-        )
-
-        # Update selected tile state
-        self.selected_tile = self.get_new_selected_state(tile, valid_move_made)
-
-        # If a move happened, execute and update board
-        if valid_move_made and original_tile:
-            self.move_and_log_piece(original_tile, tile)
-            self.selected_tile = None
-            self.update_turn_ui()
-
-            winner = self.game.get_game_winner()
-            if winner is not None:
-                winner_username = self.get_username_by_color(winner)
-                self.save_results_txt(winner_username)
-                self.show_end_screen(winner_username)
-                return
-
-        # Refresh highlights every click
         self._clear_all_highlights()
-        if self.selected_tile:
-            self._highlight_selected_and_moves(self.selected_tile.position)
-
-        # Highlight forced jumps for current player
+        if selected_position := self.game_handler.get_selected():
+            self._highlight_selected_and_moves(selected_position)
         self._show_forced_moves()
+        
+        if not self.game_handler.get_valid_move_made():
+            return
+        old, capture, new = self.game_handler.get_previous_move()
+        updated_tiles = (old, capture, new) if capture else (old, new)
+        self.update_tile_images(*updated_tiles)
+        self.update_turn_ui()
+        self.update_logging(old, capture, new)
 
-    def get_new_selected_state(
-        self, tile: Tile, valid_move_made: bool
-    ) -> Optional[Tile]:
-        """Compute new selected tile after a click."""
-        if valid_move_made:
-            return None
+        winner = self.game.get_game_winner()
+        if winner is None:
+            return
+        winner_username = self.get_username_by_color(winner)
+        self.export_result_to_database(winner_username)
+        self.show_end_screen(winner_username)
 
-        # Only allow selecting own pieces
-        if not tile.piece or tile.piece.color != self.game.turn:
-            return self.selected_tile
+    def update_tile_images(self, *positions: tuple[int, int]) -> None:
+        """Iterates over each position, updating the tile type at each one."""
+        for position in positions:
+            row, col = position
+            button = self.tile_buttons[row][col]
+            button["image"] = self._get_image(position)
 
-        # If nothing selected yet, select this tile
-        if not self.selected_tile:
-            return tile
-
-        # Clicking same tile deselects it
-        if tile is self.selected_tile:
-            return None
-
-        # Clicking another own piece switches selection
-        if (
-            self.selected_tile.piece
-            and tile.piece.color == self.selected_tile.piece.color
-        ):
-            return tile
-
-        return self.selected_tile
+    def update_logging(
+        self,
+        old: tuple[int, int],
+        capture: Optional[tuple[int, int]],
+        new: tuple[int, int],
+    ) -> None:
+        """Writes to both the log list and log ingame UI."""
+        move_type = "x" if capture else "-"
+        old_notation = self.game.get_notation_at(old)
+        new_notation = self.game.get_notation_at(new)
+        move = f"{old_notation}{move_type}{new_notation}"
+        self.logs.append(move)
+        self._append_log_line(move)
 
     def _highlight_selected_and_moves(self, position: tuple[int, int]) -> None:
         """Highlight selected piece and all valid target moves."""
-        row, col = position
-        self._set_tile_bg((row, col), self.HL_SELECTED)
+        self._set_tile_bg(position, self.HL_SELECTED)
 
         main_piece = self.game._board[position]
-        self.piece_moves = self.game.get_valid_moves(main_piece)
-        for move_row, move_col in self.piece_moves:
-            self._set_tile_bg((move_row, move_col), self.HL_MOVES)
+        assert main_piece
+        for piece_position in self.game.get_valid_moves(main_piece):
+            self._set_tile_bg(piece_position, self.HL_MOVES)
 
     def _show_forced_moves(self) -> None:
         """Highlight forced jump pieces for current turn."""
-        forced_positions = self.game.get_all_jumps(self.game.turn)
-        for pos in forced_positions:
+        for forced_position in self.game.get_all_jumps(self.game.turn):
             # Do not overwrite currently selected tile color
-            if self.selected_tile and pos == self.selected_tile.position:
+            selected = self.game_handler.get_selected()
+            if selected and forced_position == selected:
                 continue
-            self._set_tile_bg(pos, self.HL_FORCED)
+            self._set_tile_bg(forced_position, self.HL_FORCED)
 
     def _clear_all_highlights(self) -> None:
         """Restore all tile button backgrounds to default colors."""
@@ -501,26 +489,6 @@ class GameScreen(Screen):
         button = self.tile_buttons[row][col]
         button.configure(bg=color, activebackground=color)
 
-    def move_and_log_piece(self, old_tile: Tile, new_tile: Tile) -> None:
-        """Execute move, update visuals, and append move record."""
-        self.game.move_piece(old_tile.position, new_tile.position)
-
-        # Update moved from/to tiles
-        self.update_image(old_tile)
-        self.update_image(new_tile)
-
-        # If capture happened, update captured tile image
-        captured_piece = self.piece_moves.get(new_tile.position)
-        if captured_piece:
-            captured_tile = self.game._board._tile_at(captured_piece.position)
-            self.update_image(captured_tile)
-
-        # Log notation
-        move_type = "x" if captured_piece else "-"
-        move = f"{old_tile.notation}{move_type}{new_tile.notation}"
-        self.logs.append(move)
-        self._append_log_line(move)
-
     def _append_log_line(self, move: str) -> None:
         """Append one line to side move log."""
         if not hasattr(self, "log_text"):
@@ -529,11 +497,6 @@ class GameScreen(Screen):
         self.log_text.insert("end", f"{len(self.logs):>3}. {move}\n")
         self.log_text.see("end")
         self.log_text.configure(state="disabled")
-
-    def update_image(self, tile: Tile) -> None:
-        """Refresh one tile image according to current board state."""
-        row, col = tile.position
-        self.tile_buttons[row][col]["image"] = self.get_image_from_(tile)
 
     def update_turn_ui(self) -> None:
         """Update turn text in top bar."""
@@ -558,11 +521,11 @@ class GameScreen(Screen):
     def end_in_draw(self) -> None:
         """End game as draw and show final screen."""
         if self.logs:
-            self.save_results_txt(None)
+            self.export_result_to_database(None)
         self.show_end_screen(None)
 
-    def save_results_txt(self, winner: Optional[str]) -> None:
-        """Persist game result to local JSON and database."""
+    def export_result_to_database(self, winner: Optional[str]) -> None:
+        """Persist game result to database."""
         if winner:
             outcome = "Win" if winner == self.player1_username else "Loss"
         else:

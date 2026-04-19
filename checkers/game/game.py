@@ -159,11 +159,22 @@ class Game:
         """Returns the ColorID of the winner if game is done."""
         mapping = ((ColorID.LIGHT, self.light_pieces), (ColorID.DARK, self.dark_pieces))
         for color, pieces in mapping:
-            no_pieces_left = not bool(pieces)
+            no_pieces_left = not pieces
             no_moves_left = not any(map(self.get_valid_moves, pieces))
             if no_pieces_left or no_moves_left:
                 return ~color
         return None
+    
+    def get_piece_at(self, position: tuple[int, int]) -> Optional[Piece]:
+        return self._board[position]
+    
+    def get_tile_color_at(self, position: tuple[int, int]) -> ColorID:
+        return self._board.get_color_at(position)
+    
+    def get_notation_at(self, position: tuple[int, int]) -> int:
+        if notation := self._board.get_notation_at(position):
+            return notation
+        raise ValueError("Position given does not have a notation.")
 
     @property
     def turn(self) -> ColorID:
