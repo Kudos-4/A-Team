@@ -9,14 +9,11 @@ from PIL import Image, ImageTk
 from tkinter import messagebox
 import tkinter as tk
 
-from checkers.constants.colors import ColorID
-from checkers.user_interface.screen import Screen
-from checkers.game.game import Game
-from checkers.game.pieces import King
-from checkers.gamemodes.gamemode import GameMode
-from checkers.gamemodes.pvp import PvPGameMode
-from checkers.auth import auth_logic
-from checkers.auth.database import save_game
+from checkers.constants import ColorID
+from checkers.game import Game, King
+from checkers.gamemodes import GameMode, PvPGameMode, PvEGameMode
+from checkers.auth import auth_logic, database
+from checkers.user_interface import Player, Screen
 
 ASSET_DIRECTORY = Path("checkers") / "user_interface" / "assets"
 GAME_HISTORY_PATH = Path("checkers") / "game_history.json"
@@ -108,18 +105,29 @@ class GameScreen(Screen):
         self.logs = []
 
         self.prompt_gamemode()
+        gamemode = PvEGameMode
         if self.gamemode_type.get() == GameModeType.PVP:
             self.prompt_player2_username()
-            self.game_handler = PvPGameMode(self.game)
-        else:
-            # self.game_handler = PvEGameMode(self.game)
-            raise NotImplementedError("No PvE gamemode implemented.")
+            gamemode = PvPGameMode
         self.prompt_whos_first()
+        self.game_handler = self._construct_gamemode(gamemode)
 
         self.start_date = datetime.now()
         self._build_game_layout()
         self.update_turn_ui()
         self._show_forced_moves()
+
+    def _construct_gamemode(self, gamemode: type[GameMode]) -> GameMode:
+        player1_color = ColorID.LIGHT
+        if self.player1_username == self._get_username_by_color(ColorID.DARK):
+            player1_color = ColorID.DARK
+        player1 = Player(self.player1_username, player1_color)
+        player2 = Player(
+            username=self.player2_username,
+            color=~player1_color,
+            is_computer=gamemode is PvEGameMode,
+        )
+        return gamemode(self.game, (player1, player2))
 
     # -------------------------------------------------------------------------
     # Pre-game prompts
@@ -374,15 +382,15 @@ class GameScreen(Screen):
         self.tile_default_bg = {}
 
         # 用固定 8x8 + _tile_at 取格子，避免内部结构差异导致循环空
-        for i in range(8):
+        rows, cols = self.board_size
+        for i in range(rows):
             current_row: list[tk.Button] = []
-            for j in range(8):
-                # tile = self.game._board._tile_at((i, j))
+            for j in range(cols):
                 position = (i, j)
                 tile_color = self.game.get_tile_color_at(position)
 
                 base_bg = "#1f2937" if tile_color == ColorID.DARK else "#334155"
-                self.tile_default_bg[(i, j)] = base_bg
+                self.tile_default_bg[position] = base_bg
 
                 button = tk.Button(
                     board_frame,
@@ -421,7 +429,7 @@ class GameScreen(Screen):
         if selected_position := self.game_handler.get_selected():
             self._highlight_selected_and_moves(selected_position)
         self._show_forced_moves()
-        
+
         if not self.game_handler.get_valid_move_made():
             return
         old, capture, new = self.game_handler.get_previous_move()
@@ -433,7 +441,7 @@ class GameScreen(Screen):
         winner = self.game.get_game_winner()
         if winner is None:
             return
-        winner_username = self.get_username_by_color(winner)
+        winner_username = self._get_username_by_color(winner)
         self.export_result_to_database(winner_username)
         self.show_end_screen(winner_username)
 
@@ -501,11 +509,12 @@ class GameScreen(Screen):
     def update_turn_ui(self) -> None:
         """Update turn text in top bar."""
         color_name = "BLACK" if self.game.turn == ColorID.DARK else "WHITE"
-        username = self.get_username_by_color(self.game.turn)
+        username = self._get_username_by_color(self.game.turn)
         self.turn.set(f"Turn: {color_name} ({username})")
 
-    def get_username_by_color(self, color: ColorID) -> str:
+    def _get_username_by_color(self, color: ColorID) -> str:
         """Return username by piece color assignment."""
+        # If player1 name same as player 2 could raise a risk
         player1_is_dark = self.player1_username == self.dark_piece_player.get()
         color_is_dark = color == ColorID.DARK
         return (
@@ -531,8 +540,7 @@ class GameScreen(Screen):
         else:
             outcome = "Draw"
 
-        # Save database history
-        save_game(
+        database.save_game(
             user_id=self.user_id,
             opponent_name=self.player2_username,
             result=outcome,

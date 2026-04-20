@@ -12,8 +12,7 @@ Usage in ui.py:
 import tkinter as tk
 from tkinter import messagebox
 from typing import Callable
-from checkers.auth.auth import register_user, login_user
-from checkers.auth.auth_logic import validate_login_fields, validate_register_fields
+from checkers.auth import auth_logic, auth
 
 
 class AuthUI:
@@ -293,12 +292,12 @@ class AuthUI:
             )
             return
 
-        field_error = validate_login_fields(username, password)
+        field_error = auth_logic.validate_login_fields(username, password)
         if field_error:
             self._login_error_var.set(field_error)
             return
 
-        login_result = login_user(username, password)
+        login_result = auth.login_user(username, password)
 
         if login_result:
             self._failed_attempts = 0
@@ -336,14 +335,14 @@ class AuthUI:
         password = self._reg_password_var.get()
         confirm = self._reg_confirm_var.get()
 
-        error = validate_register_fields(username, email, password, confirm)
+        error = auth_logic.validate_register_fields(username, email, password, confirm)
         if error:
             self._reg_error_var.set(error)
             if "password" in error.lower() or "match" in error.lower():
                 self._clear_password_fields()
             return
 
-        success, msg = register_user(username, email, password)
+        success, msg = auth.register_user(username, email, password)
         if success:
             messagebox.showinfo(
                 "Account Created",

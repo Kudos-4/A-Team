@@ -1,11 +1,10 @@
 from typing import Callable, Optional
-import datetime
-import tkinter as tk
 from tkinter import messagebox
+import tkinter as tk
+import datetime
 
-from checkers.user_interface.screen import Screen
-from checkers.user_interface.auth_ui import AuthUI
-from checkers.auth.database import get_user_id
+from checkers.user_interface import Screen, AuthUI
+from checkers.auth import database
 
 
 class CheckersUserInterface(tk.Tk):
@@ -49,7 +48,7 @@ class CheckersUserInterface(tk.Tk):
         Stores user session and opens the main menu.
         """
         self.current_user = username
-        self.current_user_id = get_user_id(username)
+        self.current_user_id = database.get_user_id(username)
         self.main_menu()
 
     def main_menu(self) -> None:

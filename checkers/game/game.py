@@ -3,9 +3,10 @@
 from typing import Optional
 import itertools as itools
 
-from checkers.constants.colors import ColorID
-from .pieces import Piece, Pawn, King
+from checkers.constants import ColorID
+
 from .board import Board
+from .pieces import Piece, Pawn, King
 
 
 class Game:
@@ -41,7 +42,7 @@ class Game:
     ) -> bool:
         """Check if can move with respect to tile pieces, turn, and jumps."""
         piece = self._board.piece_at(piece_position)
-        
+
         if piece is None:
             return False
         if piece.color != self._turn:
@@ -51,10 +52,10 @@ class Game:
         valid_moves = self.get_valid_moves(piece)
         if new_position not in valid_moves:
             return False
-        #if jumps are available, only allow jump moves
+        # if jumps are available, only allow jump moves
         all_jumps = self.get_all_jumps(self._turn)
         if all_jumps:
-            #check if this move is a jump
+            # check if this move is a jump
             return valid_moves.get(new_position) is not None
         return True
 
@@ -63,12 +64,14 @@ class Game:
     ) -> None:
         piece = self._board.piece_at(piece_position)
         valid_moves = self.get_valid_moves(piece)
-        
+
         captured = valid_moves.get(new_position)
         if captured:
-            color_list = (self._dark_pieces
-                          if captured.color == ColorID.DARK 
-                          else self._light_pieces)
+            color_list = (
+                self._dark_pieces
+                if captured.color == ColorID.DARK
+                else self._light_pieces
+            )
             color_list.remove(captured)
             self._board.remove_piece(captured.position)
 
@@ -85,9 +88,9 @@ class Game:
         """Returns a new King from pawn's attributes if valid"""
         king = King(piece.position, piece.color)
         self._board.update_piece(piece.position, king)
-        color_list = (self._dark_pieces
-                      if piece.color == ColorID.DARK
-                      else self._light_pieces)
+        color_list = (
+            self._dark_pieces if piece.color == ColorID.DARK else self._light_pieces
+        )
         color_list.remove(piece)
         color_list.append(king)
         return king
@@ -104,8 +107,9 @@ class Game:
         for dr, dc in piece.moveset:
             destination = (row + dr, col + dc)
             dest_row, dest_col = destination
-            if not(0 <= dest_row < self._board.rows and 
-                   0 <= dest_col < self._board.cols):
+            if not (
+                0 <= dest_row < self._board.rows and 0 <= dest_col < self._board.cols
+            ):
                 continue
             target = self._board.piece_at(destination)
             if not target:
@@ -116,9 +120,11 @@ class Game:
                 continue
             jump = (row + 2 * dr, col + 2 * dc)
             jump_row, jump_col = jump
-            if (0 <= jump_row < self._board.rows and
-                0 <= jump_col < self._board.cols and
-                self._board.piece_at(jump) is None):
+            if (
+                0 <= jump_row < self._board.rows
+                and 0 <= jump_col < self._board.cols
+                and self._board.piece_at(jump) is None
+            ):
                 forced_moves[jump] = target
         # Use forced moves if any, else return regular moves
         return forced_moves or regular_moves
@@ -126,35 +132,33 @@ class Game:
     def get_all_jumps(
         self, color: ColorID
     ) -> dict[tuple[int, int], dict[tuple[int, int], Piece]]:
-        """Returns all available jump positions for a given color. 
+        """Returns all available jump positions for a given color.
         If one exists, show possible destinations and pieces it'll take"""
         jumps = {}
-        pieces = (self._dark_pieces if color == ColorID.DARK
-                  else self._light_pieces)
+        pieces = self._dark_pieces if color == ColorID.DARK else self._light_pieces
         for piece in pieces:
             moves = self.get_valid_moves(piece)
-            piece_jumps = {dest: captured
-                           for dest, captured in moves.items()
-                           if captured is not None}
+            piece_jumps = {
+                dest: captured
+                for dest, captured in moves.items()
+                if captured is not None
+            }
             if piece_jumps:
                 jumps[piece.position] = piece_jumps
         return jumps
-    
-    
+
     def switch_turn(self) -> None:
-        #swap whose turn it is after a move
-        self._turn = (ColorID.LIGHT
-                    if self._turn == ColorID.DARK
-                    else ColorID.DARK)
-        
+        # swap whose turn it is after a move
+        self._turn = ColorID.LIGHT if self._turn == ColorID.DARK else ColorID.DARK
+
     def _check_promotion(self, piece: Piece) -> None:
-        #promote pawn if it reached the last row
+        # promote pawn if it reached the last row
         if not isinstance(piece, Pawn):
             return
         target_row = self._board.rows - 1 if piece.color == ColorID.DARK else 0
         if piece.position[0] == target_row:
             self.promote_pawn(piece)
-    
+
     def get_game_winner(self) -> Optional[ColorID]:
         """Returns the ColorID of the winner if game is done."""
         mapping = ((ColorID.LIGHT, self.light_pieces), (ColorID.DARK, self.dark_pieces))
@@ -164,13 +168,13 @@ class Game:
             if no_pieces_left or no_moves_left:
                 return ~color
         return None
-    
+
     def get_piece_at(self, position: tuple[int, int]) -> Optional[Piece]:
         return self._board[position]
-    
+
     def get_tile_color_at(self, position: tuple[int, int]) -> ColorID:
         return self._board.get_color_at(position)
-    
+
     def get_notation_at(self, position: tuple[int, int]) -> int:
         if notation := self._board.get_notation_at(position):
             return notation
@@ -183,7 +187,7 @@ class Game:
     @property
     def dark_pieces(self) -> list[Piece]:
         return self._dark_pieces
-    
+
     @property
     def light_pieces(self) -> list[Piece]:
         return self._light_pieces

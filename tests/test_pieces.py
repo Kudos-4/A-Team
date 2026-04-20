@@ -1,6 +1,6 @@
 import pytest
 
-from checkers.game.pieces import Pawn, King
+from checkers.game import Pawn, King
 from checkers.constants.colors import ColorID
 
 

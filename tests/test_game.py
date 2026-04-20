@@ -1,7 +1,6 @@
 import pytest
 
-from checkers.game.game import Game
-from checkers.game.pieces import Piece
+from checkers.game import Game, Piece
 
 
 @pytest.fixture
@@ -11,12 +10,12 @@ def game() -> Game:
 
 @pytest.fixture
 def all_pieces(game: Game) -> list[Piece]:
-    return game._black_pieces + game._white_pieces
+    return game.dark_pieces + game.light_pieces
 
 
 def test_number_pieces(game: Game) -> None:
-    assert len(game._black_pieces) == 12
-    assert len(game._white_pieces) == 12
+    assert len(game.dark_pieces) == 12
+    assert len(game.light_pieces) == 12
 
 
 def is_black(position: tuple[int, int]) -> bool:

@@ -1,0 +1,9 @@
+from checkers.constants import ColorID
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class Player:
+    username: str
+    color: ColorID
+    is_computer: bool = False

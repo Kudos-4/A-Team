@@ -1,6 +1,7 @@
 from typing import Optional
 
-from checkers.constants.colors import ColorID
+from checkers.constants import ColorID
+
 from .pieces import Piece
 
 
@@ -117,10 +118,10 @@ class Board:
     def __getitem__(self, position: tuple[int, int]) -> Optional[Piece]:
         """Same as piece_at()"""
         return self.piece_at(position)
-    
+
     def get_color_at(self, position: tuple[int, int]) -> ColorID:
         return self._tile_at(position).color
-    
+
     def get_notation_at(self, position: tuple[int, int]) -> Optional[int]:
         return self._tile_at(position).notation
 

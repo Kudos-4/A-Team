@@ -1,16 +1,17 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from checkers.game.game import Game
+from checkers.user_interface.player import Player
+from checkers.game import Game, Position
+# This needs to be refactored out
 from checkers.game.board import Tile
-
-type Position = tuple[int, int]
 
 
 class GameMode(ABC):
     """Designed to handle inputs/gamestate based on game mode type."""
 
-    def __init__(self, game: Game) -> None:
+    def __init__(self, game: Game, players: tuple[Player, Player]) -> None:
+        self.player1, self.player2 = players
         self._game: Game = game
         self._selected_tile: Optional[Tile] = None
         # Holds tuple of positions of (old, captured, new)
@@ -33,7 +34,8 @@ class GameMode(ABC):
         # Default logic that can be called via super()
         new_tile = self._game._board._tile_at(position)
         self._made_valid_move = self._valid_move_made(position)
-        if self._made_valid_move and self._selected_tile:
+        if self._made_valid_move:
+            assert self._selected_tile
             self._update_previous_move(self._selected_tile, new_tile)
             self._game.move_piece(self._selected_tile.position, position)
         self._selected_tile = self._updated_selected_tile(new_tile)

@@ -3,8 +3,8 @@ from tkinter import ttk, messagebox
 from datetime import datetime
 from typing import Any
 
-from checkers.user_interface.screen import Screen
-from checkers.auth.database import get_game_history
+from checkers.auth import database
+from checkers.user_interface import Screen
 
 
 class GameHistoryScreen(Screen):
@@ -127,7 +127,7 @@ class GameHistoryScreen(Screen):
     def _fetch_game_history(self) -> list[dict[str, Any]]:
         """Fetch game history records from database layer."""
         try:
-            data = get_game_history(self.user_id)
+            data = database.get_game_history(self.user_id)
             return data if isinstance(data, list) else []
         except Exception:
             # Fail-safe path to keep UI responsive even if DB call fails
