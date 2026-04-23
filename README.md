@@ -15,7 +15,7 @@ A full-featured American checkers game implemented in Python 3.12, built as a co
 ### Requirements
 
 ```bash
-pip install pygame pytest
+pip install pytest pillow bcrypt
 ```
 
 ### Run the game
@@ -38,7 +38,7 @@ Per pytest conventions, all test files are in `tests/` and start with `test_*.py
 
 ```
 A-Team-repo/
-├── main.py                        # Entry point / dependency injection
+├── main.py                        # Entry point
 ├── checkers.db                    # SQLite database (auto-created on first run)
 ├── checkers/
 │   ├── auth/
@@ -56,12 +56,10 @@ A-Team-repo/
 │       ├── game_history_ui.py     # Game history viewer
 │       ├── game_ui.py             # Main gameplay screen
 │       ├── screen.py              # Screen/window management
-│       └── ui.py                  # UI entry point / screen router
+│       └── ui.py                  # UI entry point/screen router
 └── tests/
     └── test_*.py                  # pytest test files
 ```
-
-> **Note:** All files inside `checkers/` are treated as packages. Run them with `python -m checkers.game.pieces` (dot notation, no `.py`) rather than directly.
 
 ## Architecture
 
@@ -71,7 +69,7 @@ The project is separated into three independent layers:
 |-------|---------------|
 | `auth/` | User registration, login, and session management |
 | `game/` | Pure game logic — board state, legal moves, win detection |
-| `user_interface/` | Pygame rendering and user input; calls into game and auth layers |
+| `user_interface/` | Tkinter rendering and user input; calls into game and auth layers |
 
 This separation makes the game logic independently testable without a display.
 
@@ -80,9 +78,9 @@ This separation makes the game logic independently testable without a display.
 | Tool | Purpose |
 |------|---------|
 | Python 3.12 | Core language |
-| Pygame | Graphical interface |
+| Tkinter | Graphical interface |
 | SQLite3 | Persistent user and game-history storage |
-| pytest | Automated testing |
+| Pytest | Automated testing |
 
 ## Authors
 
