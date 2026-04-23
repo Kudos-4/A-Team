@@ -9,7 +9,7 @@ from PIL import Image, ImageTk
 from tkinter import messagebox
 import tkinter as tk
 
-from checkers.constants import ColorID
+from checkers.constants import ColorID, Color
 from checkers.game import Game, King
 from checkers.gamemodes import GameMode, PvPGameMode, PvEGameMode
 from checkers.auth import auth_logic, database
@@ -29,24 +29,6 @@ class GameScreen(Screen):
 
     def __init__(self, player1_username: str, user_id: int) -> None:
         super().__init__()
-
-        # Theme colors
-        self.BG_APP = "#0f172a"
-        self.BG_TOPBAR = "#111827"
-        self.BG_CARD = "#1e293b"
-        self.BG_PANEL = "#233247"
-        self.BG_BUTTON = "#334155"
-        self.BG_BUTTON_HOVER = "#475569"
-        self.BG_DANGER = "#f43f5e"
-        self.BG_DANGER_HOVER = "#e11d48"
-        self.FG_TEXT = "#f8fafc"
-        self.FG_MUTED = "#94a3b8"
-        self.FG_ACCENT = "#f43f5e"
-
-        # Highlight colors
-        self.HL_SELECTED = "#3b82f6"
-        self.HL_MOVES = "#60a5fa"
-        self.HL_FORCED = "#f59e0b"
 
         # Session/game metadata
         self.player1_username = player1_username
@@ -70,7 +52,7 @@ class GameScreen(Screen):
         self.start_date: datetime
 
         # Lockout state is managed by auth flow, not here
-        self.configure(bg=self.BG_APP)
+        self.configure(bg=Color.BG_APP)
 
     def initialize_icons(self) -> dict[str, ImageTk.PhotoImage]:
         """Load and scale all board and piece images."""
@@ -92,7 +74,7 @@ class GameScreen(Screen):
     def run(self) -> None:
         """Initialize a new game session and render UI."""
         self.clear_screen()
-        self.configure(bg=self.BG_APP)
+        self.configure(bg=Color.BG_APP)
 
         self.player2_username = "Computer"
         self.dark_piece_player.set("")
@@ -136,7 +118,7 @@ class GameScreen(Screen):
     def prompt_gamemode(self) -> None:
         """Prompt player to select game mode."""
         self.clear_screen()
-        self.configure(bg=self.BG_APP)
+        self.configure(bg=Color.BG_APP)
 
         card = self._create_center_card()
 
@@ -144,16 +126,16 @@ class GameScreen(Screen):
             card,
             text="SELECT MODE",
             font=("Arial", 30, "bold"),
-            fg=self.FG_ACCENT,
-            bg=self.BG_CARD,
+            fg=Color.FG_ACCENT,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 8))
 
         tk.Label(
             card,
             text="How would you like to play?",
             font=("Arial", 12),
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 18))
 
         self._themed_button(
@@ -173,7 +155,7 @@ class GameScreen(Screen):
     def prompt_player2_username(self) -> None:
         """Prompt player 2 username for PvP mode."""
         self.clear_screen()
-        self.configure(bg=self.BG_APP)
+        self.configure(bg=Color.BG_APP)
 
         card = self._create_center_card()
 
@@ -181,16 +163,16 @@ class GameScreen(Screen):
             card,
             text="PLAYER 2",
             font=("Arial", 28, "bold"),
-            fg=self.FG_ACCENT,
-            bg=self.BG_CARD,
+            fg=Color.FG_ACCENT,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 8))
 
         tk.Label(
             card,
             text="Enter player 2's username",
             font=("Arial", 12),
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 16))
 
         username = tk.StringVar()
@@ -201,13 +183,13 @@ class GameScreen(Screen):
             card,
             textvariable=username,
             font=("Arial", 14),
-            bg=self.BG_PANEL,
-            fg=self.FG_TEXT,
-            insertbackground=self.FG_TEXT,
+            bg=Color.BG_PANEL,
+            fg=Color.FG_TEXT,
+            insertbackground=Color.FG_TEXT,
             bd=0,
             highlightthickness=2,
-            highlightbackground=self.BG_CARD,
-            highlightcolor=self.FG_ACCENT,
+            highlightbackground=Color.BG_CARD,
+            highlightcolor=Color.FG_ACCENT,
             width=28,
         )
         entry.pack(ipady=8, pady=(0, 10))
@@ -218,7 +200,7 @@ class GameScreen(Screen):
             textvariable=error_var,
             font=("Arial", 10),
             fg="#ef4444",
-            bg=self.BG_CARD,
+            bg=Color.BG_CARD,
             wraplength=420,
         ).pack(pady=(0, 10))
 
@@ -244,7 +226,7 @@ class GameScreen(Screen):
     def prompt_whos_first(self) -> None:
         """Prompt who plays first as dark."""
         self.clear_screen()
-        self.configure(bg=self.BG_APP)
+        self.configure(bg=Color.BG_APP)
 
         card = self._create_center_card()
 
@@ -252,16 +234,16 @@ class GameScreen(Screen):
             card,
             text="FIRST MOVE",
             font=("Arial", 28, "bold"),
-            fg=self.FG_ACCENT,
-            bg=self.BG_CARD,
+            fg=Color.FG_ACCENT,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 8))
 
         tk.Label(
             card,
             text="Who starts as DARK?",
             font=("Arial", 12),
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 16))
 
         self._themed_button(
@@ -285,18 +267,18 @@ class GameScreen(Screen):
     def _build_game_layout(self) -> None:
         """Build main game screen: top bar, side panel, and board."""
         self.clear_screen()
-        self.configure(bg=self.BG_APP)
+        self.configure(bg=Color.BG_APP)
 
         # Top bar
-        top_bar = tk.Frame(self, bg=self.BG_TOPBAR)
+        top_bar = tk.Frame(self, bg=Color.BG_TOPBAR)
         top_bar.pack(fill="x", padx=14, pady=(10, 0))
 
         tk.Label(
             top_bar,
             text=f"{self.player1_username} vs {self.player2_username}",
             font=("Arial", 12, "bold"),
-            fg=self.FG_MUTED,
-            bg=self.BG_TOPBAR,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_TOPBAR,
             padx=10,
             pady=8,
         ).pack(side="left")
@@ -305,59 +287,59 @@ class GameScreen(Screen):
             top_bar,
             textvariable=self.turn,
             font=("Arial", 12, "bold"),
-            fg=self.FG_TEXT,
-            bg=self.BG_TOPBAR,
+            fg=Color.FG_TEXT,
+            bg=Color.BG_TOPBAR,
             padx=10,
             pady=8,
         ).pack(side="right")
 
         # Main body
-        body = tk.Frame(self, bg=self.BG_APP)
+        body = tk.Frame(self, bg=Color.BG_APP)
         body.pack(fill="both", expand=True, padx=18, pady=16)
 
         # Side panel
-        panel = tk.Frame(body, bg=self.BG_CARD, padx=16, pady=16)
+        panel = tk.Frame(body, bg=Color.BG_CARD, padx=16, pady=16)
         panel.pack(side="left", fill="y")
 
         tk.Label(
             panel,
             text="Match Controls",
             font=("Arial", 14, "bold"),
-            fg=self.FG_ACCENT,
-            bg=self.BG_CARD,
+            fg=Color.FG_ACCENT,
+            bg=Color.BG_CARD,
         ).pack(anchor="w", pady=(0, 12))
 
         self._themed_button(
             panel,
             text="Offer Draw",
             command=self.end_in_draw,
-            bg=self.BG_BUTTON,
-            hover_bg=self.BG_BUTTON_HOVER,
+            bg=Color.BG_BUTTON,
+            hover_bg=Color.BG_BUTTON_HOVER,
         ).pack(fill="x", pady=6)
 
         self._themed_button(
             panel,
             text="Return to Menu",
             command=self._confirm_exit_match,
-            bg=self.BG_DANGER,
-            hover_bg=self.BG_DANGER_HOVER,
+            bg=Color.BG_DANGER,
+            hover_bg=Color.BG_DANGER_HOVER,
         ).pack(fill="x", pady=6)
 
         tk.Label(
             panel,
             text="Move Log",
             font=("Arial", 12, "bold"),
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
         ).pack(anchor="w", pady=(18, 8))
 
         self.log_text = tk.Text(
             panel,
             width=28,
             height=20,
-            bg=self.BG_PANEL,
-            fg=self.FG_TEXT,
-            insertbackground=self.FG_TEXT,
+            bg=Color.BG_PANEL,
+            fg=Color.FG_TEXT,
+            insertbackground=Color.FG_TEXT,
             bd=0,
             relief="flat",
             padx=10,
@@ -368,14 +350,14 @@ class GameScreen(Screen):
         self.log_text.pack(fill="both", expand=False)
 
         # Board area
-        board_wrap = tk.Frame(body, bg=self.BG_APP)
+        board_wrap = tk.Frame(body, bg=Color.BG_APP)
         board_wrap.pack(side="left", fill="both", expand=True)
 
         self._init_board(board_wrap)
 
     def _init_board(self, parent: tk.Widget) -> None:
         """Create all board tiles and bind click handlers."""
-        board_frame = tk.Frame(parent, bg=self.BG_APP)
+        board_frame = tk.Frame(parent, bg=Color.BG_APP)
         board_frame.pack(expand=True)  # 不用 place，避免尺寸计算问题
 
         self.tile_buttons = []
@@ -468,12 +450,12 @@ class GameScreen(Screen):
 
     def _highlight_selected_and_moves(self, position: tuple[int, int]) -> None:
         """Highlight selected piece and all valid target moves."""
-        self._set_tile_bg(position, self.HL_SELECTED)
+        self._set_tile_bg(position, Color.HL_SELECTED)
 
         main_piece = self.game._board[position]
         assert main_piece
         for piece_position in self.game.get_valid_moves(main_piece):
-            self._set_tile_bg(piece_position, self.HL_MOVES)
+            self._set_tile_bg(piece_position, Color.HL_MOVES)
 
     def _show_forced_moves(self) -> None:
         """Highlight forced jump pieces for current turn."""
@@ -482,7 +464,7 @@ class GameScreen(Screen):
             selected = self.game_handler.get_selected()
             if selected and forced_position == selected:
                 continue
-            self._set_tile_bg(forced_position, self.HL_FORCED)
+            self._set_tile_bg(forced_position, Color.HL_FORCED)
 
     def _clear_all_highlights(self) -> None:
         """Restore all tile button backgrounds to default colors."""
@@ -552,7 +534,7 @@ class GameScreen(Screen):
     def show_end_screen(self, winner: Optional[str]) -> None:
         """Render final result screen with actions."""
         self.clear_screen()
-        self.configure(bg=self.BG_APP)
+        self.configure(bg=Color.BG_APP)
 
         card = self._create_center_card()
 
@@ -570,15 +552,15 @@ class GameScreen(Screen):
             text=winner_text,
             font=("Arial", 28, "bold"),
             fg=color,
-            bg=self.BG_CARD,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 8))
 
         tk.Label(
             card,
             text=detail_text,
             font=("Arial", 12),
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 20))
 
         self._themed_button(
@@ -591,8 +573,8 @@ class GameScreen(Screen):
             card,
             text="Return to Menu",
             command=self.destroy,
-            bg=self.BG_DANGER,
-            hover_bg=self.BG_DANGER_HOVER,
+            bg=Color.BG_DANGER,
+            hover_bg=Color.BG_DANGER_HOVER,
         ).pack(fill="x", pady=6)
 
     def _confirm_exit_match(self) -> None:
@@ -610,10 +592,10 @@ class GameScreen(Screen):
 
     def _create_center_card(self) -> tk.Frame:
         """Create a centered card container."""
-        container = tk.Frame(self, bg=self.BG_APP)
+        container = tk.Frame(self, bg=Color.BG_APP)
         container.place(relx=0.5, rely=0.5, anchor="center")
 
-        card = tk.Frame(container, bg=self.BG_CARD, padx=36, pady=30)
+        card = tk.Frame(container, bg=Color.BG_CARD, padx=36, pady=30)
         card.pack()
         return card
 
@@ -626,17 +608,17 @@ class GameScreen(Screen):
         hover_bg: Optional[str] = None,
     ) -> tk.Button:
         """Create a theme-consistent button with hover effect."""
-        base_bg = bg or self.BG_BUTTON
-        over_bg = hover_bg or self.BG_BUTTON_HOVER
+        base_bg = bg or Color.BG_BUTTON
+        over_bg = hover_bg or Color.BG_BUTTON_HOVER
 
         btn = tk.Button(
             parent,
             text=text,
             font=("Arial", 12, "bold"),
             bg=base_bg,
-            fg=self.FG_TEXT,
+            fg=Color.FG_TEXT,
             activebackground=over_bg,
-            activeforeground=self.FG_TEXT,
+            activeforeground=Color.FG_TEXT,
             bd=0,
             relief="flat",
             cursor="hand2",
