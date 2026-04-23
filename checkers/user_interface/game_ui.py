@@ -1,7 +1,6 @@
 """Game UI that sets a GameMode and update itself after each input."""
 
 from typing import Optional
-from enum import StrEnum, auto
 from datetime import datetime
 from pathlib import Path
 
@@ -19,11 +18,6 @@ ASSET_DIRECTORY = Path("checkers") / "user_interface" / "assets"
 GAME_HISTORY_PATH = Path("checkers") / "game_history.json"
 
 
-class GameModeType(StrEnum):
-    PVP = auto()
-    PVE = auto()
-
-
 class GameScreen(Screen):
     """Main game UI screen for checkers."""
 
@@ -34,10 +28,10 @@ class GameScreen(Screen):
         self.player1_username = player1_username
         self.user_id = user_id
         self.player2_username: str = "Computer"
+        self.pvp_enabled: bool
 
         # Setup state vars
-        self.dark_piece_player = tk.StringVar()
-        self.gamemode_type = tk.StringVar()
+        self.dark_piece_player: str = ""
         self.turn = tk.StringVar()
 
         # Game engine and board state
@@ -77,8 +71,8 @@ class GameScreen(Screen):
         self.configure(bg=Color.BG_APP)
 
         self.player2_username = "Computer"
-        self.dark_piece_player.set("")
-        self.gamemode_type.set("")
+        self.dark_piece_player = ""
+        self.pvp_enabled = False
         self.turn.set("")
 
         self.game = Game(self.board_size)
@@ -88,7 +82,7 @@ class GameScreen(Screen):
 
         self.prompt_gamemode()
         gamemode = PvEGameMode
-        if self.gamemode_type.get() == GameModeType.PVP:
+        if self.pvp_enabled:
             self.prompt_player2_username()
             gamemode = PvPGameMode
         self.prompt_whos_first()
@@ -138,19 +132,22 @@ class GameScreen(Screen):
             bg=Color.BG_CARD,
         ).pack(pady=(0, 18))
 
+        is_pvp = tk.BooleanVar()
+
         self._themed_button(
             card,
             text="Player vs Player",
-            command=lambda: self.gamemode_type.set(GameModeType.PVP),
+            command=lambda: is_pvp.set(True),
         ).pack(fill="x", pady=6)
 
         self._themed_button(
             card,
             text="Player vs Computer",
-            command=lambda: self.gamemode_type.set(GameModeType.PVE),
+            command=lambda: is_pvp.set(False),
         ).pack(fill="x", pady=6)
 
-        self.wait_variable(self.gamemode_type)
+        self.wait_variable(is_pvp)
+        self.pvp_enabled = is_pvp.get()
 
     def prompt_player2_username(self) -> None:
         """Prompt player 2 username for PvP mode."""
@@ -246,19 +243,22 @@ class GameScreen(Screen):
             bg=Color.BG_CARD,
         ).pack(pady=(0, 16))
 
+        selected_user = tk.StringVar()
+
         self._themed_button(
             card,
             text=self.player1_username,
-            command=lambda: self.dark_piece_player.set(self.player1_username),
+            command=lambda: selected_user.set(self.player1_username),
         ).pack(fill="x", pady=6)
 
         self._themed_button(
             card,
             text=self.player2_username,
-            command=lambda: self.dark_piece_player.set(self.player2_username),
+            command=lambda: selected_user.set(self.player2_username),
         ).pack(fill="x", pady=6)
 
-        self.wait_variable(self.dark_piece_player)
+        self.wait_variable(selected_user)
+        self.dark_piece_player = selected_user.get()
 
     # -------------------------------------------------------------------------
     # Main game layout
@@ -497,7 +497,7 @@ class GameScreen(Screen):
     def _get_username_by_color(self, color: ColorID) -> str:
         """Return username by piece color assignment."""
         # If player1 name same as player 2 could raise a risk
-        player1_is_dark = self.player1_username == self.dark_piece_player.get()
+        player1_is_dark = self.player1_username == self.dark_piece_player
         color_is_dark = color == ColorID.DARK
         return (
             self.player1_username
