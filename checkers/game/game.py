@@ -4,9 +4,7 @@ from typing import Optional
 import itertools as itools
 
 from checkers.constants import ColorID
-
-from .board import Board
-from .pieces import Piece, Pawn, King
+from checkers.game import Board, Piece, Pawn, King
 
 
 class Game:
@@ -14,22 +12,20 @@ class Game:
         self._board = Board(board_size)
         self._turn = ColorID.DARK
 
-        self._dark_pieces: list[Piece] = []
-        self._light_pieces: list[Piece] = []
+        self.pieces: dict[ColorID, list[Piece]] = {
+            ColorID.DARK: [],
+            ColorID.LIGHT: [],
+        }
         self._populate_board()
 
     def _populate_board(self) -> None:
         """Add designated pieces to top/bottom three rows' black squares"""
-        mapping = {
-            ColorID.DARK: self._dark_pieces,
-            ColorID.LIGHT: self._light_pieces,
-        }
         rows = self._board.rows
         # Assuming rows > 6
         black_rows = ((ColorID.DARK, i) for i in range(3))
         white_rows = ((ColorID.LIGHT, rows - i) for i in range(1, 4))
         for color_type, row in itools.chain(black_rows, white_rows):
-            color_list = mapping[color_type]
+            color_list = self.pieces[color_type]
             start = (row % 2) ^ 1
             for col in range(start, self._board.cols, 2):
                 position = (row, col)
@@ -63,20 +59,18 @@ class Game:
         self, piece_position: tuple[int, int], new_position: tuple[int, int]
     ) -> None:
         piece = self._board.piece_at(piece_position)
+        assert piece
         valid_moves = self.get_valid_moves(piece)
 
-        captured = valid_moves.get(new_position)
-        if captured:
-            color_list = (
-                self._dark_pieces
-                if captured.color == ColorID.DARK
-                else self._light_pieces
-            )
+        if captured := valid_moves.get(new_position):
+            color_list = self.pieces[captured.color]
             color_list.remove(captured)
             self._board.remove_piece(captured.position)
 
         self._board.move_piece(piece_position, new_position)
-        self._check_promotion(self._board.piece_at(new_position))
+        same_piece = self._board.piece_at(new_position)
+        assert same_piece
+        self._check_promotion(same_piece)
 
         made_capture = any(valid_moves.values())
         can_still_capture = any(self.get_valid_moves(piece).values())
@@ -88,9 +82,7 @@ class Game:
         """Returns a new King from pawn's attributes if valid"""
         king = King(piece.position, piece.color)
         self._board.update_piece(piece.position, king)
-        color_list = (
-            self._dark_pieces if piece.color == ColorID.DARK else self._light_pieces
-        )
+        color_list = self.pieces[piece.color]
         color_list.remove(piece)
         color_list.append(king)
         return king
@@ -135,8 +127,7 @@ class Game:
         """Returns all available jump positions for a given color.
         If one exists, show possible destinations and pieces it'll take"""
         jumps = {}
-        pieces = self._dark_pieces if color == ColorID.DARK else self._light_pieces
-        for piece in pieces:
+        for piece in self.pieces[color]:
             moves = self.get_valid_moves(piece)
             piece_jumps = {
                 dest: captured
@@ -186,8 +177,8 @@ class Game:
 
     @property
     def dark_pieces(self) -> list[Piece]:
-        return self._dark_pieces
+        return self.pieces[ColorID.DARK]
 
     @property
     def light_pieces(self) -> list[Piece]:
-        return self._light_pieces
+        return self.pieces[ColorID.LIGHT]
