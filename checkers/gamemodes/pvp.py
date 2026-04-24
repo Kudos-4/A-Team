@@ -7,4 +7,5 @@ class PvPGameMode(GameMode):
     Accepts any inputs for either light or dark user."""
 
     def tile_pressed(self, position: Position) -> None:
-        return super().tile_pressed(position)
+        super().tile_pressed(position)
+        self._ui.update_interface()

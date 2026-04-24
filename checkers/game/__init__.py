@@ -1,5 +1,5 @@
 # Independent
-from .position import Position
+from .game_types import Position, Move
 from .pieces import Piece, Pawn, King
 
 # Dependent

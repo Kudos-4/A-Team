@@ -94,6 +94,12 @@ class GameScreen(Screen):
         self._show_forced_moves()
 
     def _construct_gamemode(self, gamemode: type[GameMode]) -> GameMode:
+        if gamemode is PvPGameMode:
+            return PvPGameMode(self)
+        players = self._create_players(gamemode)
+        return PvEGameMode(self, players)
+
+    def _create_players(self, gamemode: type[GameMode]) -> tuple[Player, Player]:
         player1_color = ColorID.LIGHT
         if self.player1_username == self._get_username_by_color(ColorID.DARK):
             player1_color = ColorID.DARK
@@ -103,7 +109,7 @@ class GameScreen(Screen):
             color=~player1_color,
             is_computer=gamemode is PvEGameMode,
         )
-        return gamemode(self.game, (player1, player2))
+        return player1, player2
 
     # -------------------------------------------------------------------------
     # Pre-game prompts
@@ -406,7 +412,8 @@ class GameScreen(Screen):
     def tile_clicked(self, position: tuple[int, int]) -> None:
         """Send user input to GameMode handler, and update UI afterwards"""
         self.game_handler.tile_pressed(position)  # Updates game state
-
+    
+    def update_interface(self) -> None:
         self._clear_all_highlights()
         if selected_position := self.game_handler.get_selected():
             self._highlight_selected_and_moves(selected_position)
@@ -415,8 +422,8 @@ class GameScreen(Screen):
         if not self.game_handler.get_valid_move_made():
             return
         old, capture, new = self.game_handler.get_previous_move()
-        updated_tiles = (old, capture, new) if capture else (old, new)
-        self.update_tile_images(*updated_tiles)
+        # updated_tiles = (old, capture, new) if capture else (old, new)
+        self.update_tile_images()
         self.update_turn_ui()
         self.update_logging(old, capture, new)
 
@@ -427,9 +434,9 @@ class GameScreen(Screen):
         self.export_result_to_database(winner_username)
         self.show_end_screen(winner_username)
 
-    def update_tile_images(self, *positions: tuple[int, int]) -> None:
+    def update_tile_images(self) -> None:
         """Iterates over each position, updating the tile type at each one."""
-        for position in positions:
+        for position in ((i, j) for i in range(8) for j in range(8)):
             row, col = position
             button = self.tile_buttons[row][col]
             button["image"] = self._get_image(position)

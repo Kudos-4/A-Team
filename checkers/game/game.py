@@ -4,11 +4,11 @@ from typing import Optional
 import itertools as itools
 
 from checkers.constants import ColorID
-from checkers.game import Board, Piece, Pawn, King
+from checkers.game import Board, Piece, Pawn, King, Position
 
 
 class Game:
-    def __init__(self, board_size: tuple[int, int]) -> None:
+    def __init__(self, board_size: Position) -> None:
         self._board = Board(board_size)
         self._turn = ColorID.DARK
 
@@ -33,9 +33,7 @@ class Game:
                 self._board.set_piece(position, pawn)
                 color_list.append(pawn)
 
-    def can_move_to(
-        self, piece_position: tuple[int, int], new_position: tuple[int, int]
-    ) -> bool:
+    def can_move_to(self, piece_position: Position, new_position: Position) -> bool:
         """Check if can move with respect to tile pieces, turn, and jumps."""
         piece = self._board.piece_at(piece_position)
 
@@ -55,9 +53,7 @@ class Game:
             return valid_moves.get(new_position) is not None
         return True
 
-    def move_piece(
-        self, piece_position: tuple[int, int], new_position: tuple[int, int]
-    ) -> None:
+    def move_piece(self, piece_position: Position, new_position: Position) -> None:
         piece = self._board.piece_at(piece_position)
         assert piece
         valid_moves = self.get_valid_moves(piece)
@@ -76,9 +72,9 @@ class Game:
         can_still_capture = any(self.get_valid_moves(piece).values())
         if made_capture and can_still_capture:
             return
-        self.switch_turn()
+        self._switch_turn()
 
-    def promote_pawn(self, piece: Pawn) -> King:
+    def _promote_pawn(self, piece: Pawn) -> King:
         """Returns a new King from pawn's attributes if valid"""
         king = King(piece.position, piece.color)
         self._board.update_piece(piece.position, king)
@@ -89,11 +85,11 @@ class Game:
 
     def get_valid_moves(
         self, piece: Piece
-    ) -> dict[tuple[int, int], Piece] | dict[tuple[int, int], None]:
+    ) -> dict[Position, Piece] | dict[Position, None]:
         """Given a piece, return key-value pairs of possible
         positions and any piece it can take making that move."""
-        regular_moves: dict[tuple[int, int], None] = {}
-        forced_moves: dict[tuple[int, int], Piece] = {}
+        regular_moves: dict[Position, None] = {}
+        forced_moves: dict[Position, Piece] = {}
 
         row, col = piece.position
         for dr, dc in piece.moveset:
@@ -121,9 +117,20 @@ class Game:
         # Use forced moves if any, else return regular moves
         return forced_moves or regular_moves
 
-    def get_all_jumps(
-        self, color: ColorID
-    ) -> dict[tuple[int, int], dict[tuple[int, int], Piece]]:
+    def all_moves_of_color(self, color: ColorID) -> list[tuple[Position, Position]]:
+        """All legal moves that can be made for a player's turn."""
+        all_jumps: list[tuple[Position, Position]] = []
+        all_regular: list[tuple[Position, Position]] = []
+
+        for piece in self.pieces[color]:
+            piece_moves = self.get_valid_moves(piece)
+            for destination, captured in piece_moves.items():
+                move_list = all_jumps if captured else all_regular
+                move = (piece.position, destination)
+                move_list.append(move)
+        return all_jumps or all_regular
+
+    def get_all_jumps(self, color: ColorID) -> dict[Position, dict[Position, Piece]]:
         """Returns all available jump positions for a given color.
         If one exists, show possible destinations and pieces it'll take"""
         jumps = {}
@@ -138,7 +145,7 @@ class Game:
                 jumps[piece.position] = piece_jumps
         return jumps
 
-    def switch_turn(self) -> None:
+    def _switch_turn(self) -> None:
         # swap whose turn it is after a move
         self._turn = ColorID.LIGHT if self._turn == ColorID.DARK else ColorID.DARK
 
@@ -148,7 +155,7 @@ class Game:
             return
         target_row = self._board.rows - 1 if piece.color == ColorID.DARK else 0
         if piece.position[0] == target_row:
-            self.promote_pawn(piece)
+            self._promote_pawn(piece)
 
     def get_game_winner(self) -> Optional[ColorID]:
         """Returns the ColorID of the winner if game is done."""
@@ -160,16 +167,19 @@ class Game:
                 return ~color
         return None
 
-    def get_piece_at(self, position: tuple[int, int]) -> Optional[Piece]:
+    def get_piece_at(self, position: Position) -> Optional[Piece]:
         return self._board[position]
 
-    def get_tile_color_at(self, position: tuple[int, int]) -> ColorID:
+    def get_tile_color_at(self, position: Position) -> ColorID:
         return self._board.get_color_at(position)
 
-    def get_notation_at(self, position: tuple[int, int]) -> int:
+    def get_notation_at(self, position: Position) -> int:
         if notation := self._board.get_notation_at(position):
             return notation
         raise ValueError("Position given does not have a notation.")
+
+    def pieces_of_color(self, color: ColorID) -> list[Piece]:
+        return self.pieces[color]
 
     @property
     def turn(self) -> ColorID:
