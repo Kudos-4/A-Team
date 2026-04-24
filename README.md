@@ -85,5 +85,4 @@ This separation makes the game logic independently testable without a display.
 ## Authors
 
 A-Team — Collaborative project  
-Jason Ramirez Medina (contributor) — Computer Science / Finance / Mathematics  
 University of South Carolina Upstate
