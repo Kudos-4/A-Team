@@ -5,6 +5,7 @@ from typing import Any
 
 from checkers.auth import database
 from checkers.user_interface import Screen
+from checkers.user_interface.replay_ui import ReplayScreen
 
 
 class GameHistoryScreen(Screen):
@@ -258,8 +259,8 @@ class GameHistoryScreen(Screen):
                 relief="flat",
                 bd=0,
                 cursor="hand2",
-                command=lambda path=game["move_record_path"], moves=game["moves"]: (
-                    self._open_move_record(path, moves)
+                command=lambda moves=game["moves"], opp=game["opponent"], res=game["result"], dt=game["date"]: (
+                    self._open_move_record(moves, opp, res, dt)
                 ),
                 padx=10,
                 pady=6,
@@ -313,30 +314,12 @@ class GameHistoryScreen(Screen):
             return "#f59e0b"
         return self.FG_TEXT
 
-    def _open_move_record(self, file_path: str, moves: list[Any]) -> None:
-        """
-        Open move record detail.
-        If file path exists, show placeholder info.
-        If moves list exists, show list in dialog.
-        """
-        # Keep behavior simple and robust for current project stage
-        if moves:
-            preview = "\n".join(str(m) for m in moves[:40])
-            if len(moves) > 40:
-                preview += "\n..."
-            messagebox.showinfo("Move Record", f"Moves:\n{preview}")
+    def _open_move_record(self, moves: list[Any], opponent: str, result: str, date: str) -> None:
+        """Open the replay visualization for a past game."""
+        if not moves:
+            messagebox.showinfo("Move Record", "No move record data is available for this game.")
             return
-
-        if file_path:
-            messagebox.showinfo(
-                "Move Record",
-                f"Move record path:\n{file_path}\n\nDetailed file viewer can be added next.",
-            )
-            return
-
-        messagebox.showinfo(
-            "Move Record", "No move record data is available for this game."
-        )
+        ReplayScreen(self, moves, opponent, result, date)
 
     def _create_back_button(self) -> None:
         """Create a themed back button."""

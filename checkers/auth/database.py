@@ -94,12 +94,21 @@ def get_game_history(user_id: int) -> list[dict]:
             date_part, time_part = played_at.split(" ", 1)
         else:
             date_part, time_part = played_at, ""
+        moves: list[str] = []
+        if row["record_file"]:
+            try:
+                parsed = json.loads(row["record_file"])
+                if isinstance(parsed, list):
+                    moves = [str(m) for m in parsed]
+            except (json.JSONDecodeError, ValueError):
+                pass
         history.append({
             "date": date_part,
             "time": time_part,
             "opponent": row["opponent_name"],
             "result": row["result"],
             "total_moves": row["total_moves"],
+            "moves": moves,
             "move_record_path": row["record_file"] or "",
         })
     return history
