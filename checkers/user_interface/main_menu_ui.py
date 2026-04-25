@@ -3,11 +3,12 @@ from tkinter import messagebox
 import tkinter as tk
 import datetime
 
+from checkers.colors import Color
 from checkers.user_interface import Screen, AuthUI
 from checkers.auth import database
 
 
-class CheckersUserInterface(tk.Tk):
+class MainMenuUI(tk.Tk):
     def __init__(self, resolution: tuple[int, int]) -> None:
         super().__init__()
         self.width, self.height = resolution
@@ -16,19 +17,7 @@ class CheckersUserInterface(tk.Tk):
         self.attributes("-fullscreen", True)
         self.title("Checkers Pro")
 
-        # App theme colors
-        self.BG_APP = "#0f172a"
-        self.BG_CARD = "#1e293b"
-        self.BG_TOPBAR = "#111827"
-        self.BG_BUTTON = "#334155"
-        self.BG_BUTTON_HOVER = "#475569"
-        self.BG_DANGER = "#f43f5e"
-        self.BG_DANGER_HOVER = "#e11d48"
-        self.FG_TEXT = "#f8fafc"
-        self.FG_MUTED = "#94a3b8"
-        self.FG_ACCENT = "#f43f5e"
-
-        self.configure(bg=self.BG_APP)
+        self.configure(bg=Color.BG_APP)
 
         # Track logged-in user
         self.current_user: Optional[str] = None
@@ -55,18 +44,18 @@ class CheckersUserInterface(tk.Tk):
         """Render the main menu screen."""
         self.title("Checkers Pro - Main Menu")
         self._clear_root()
-        self.configure(bg=self.BG_APP)
+        self.configure(bg=Color.BG_APP)
 
         # Top bar
-        top_bar = tk.Frame(self, bg=self.BG_TOPBAR)
+        top_bar = tk.Frame(self, bg=Color.BG_TOPBAR)
         top_bar.pack(fill="x", padx=16, pady=(10, 0))
 
         tk.Label(
             top_bar,
             textvariable=self._datetime_var,
             font=("Arial", 14),
-            fg=self.FG_MUTED,
-            bg=self.BG_TOPBAR,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_TOPBAR,
             padx=8,
             pady=8,
             anchor="w",
@@ -76,34 +65,34 @@ class CheckersUserInterface(tk.Tk):
             top_bar,
             text=f"Player: {self.current_user or 'Unknown'}",
             font=("Arial", 14, "bold"),
-            fg=self.FG_TEXT,
-            bg=self.BG_TOPBAR,
+            fg=Color.FG_TEXT,
+            bg=Color.BG_TOPBAR,
             padx=8,
             pady=8,
             anchor="e",
         ).pack(side="right")
 
         # Center card
-        container = tk.Frame(self, bg=self.BG_APP)
+        container = tk.Frame(self, bg=Color.BG_APP)
         container.place(relx=0.5, rely=0.53, anchor="center")
 
-        card = tk.Frame(container, bg=self.BG_CARD, padx=42, pady=36)
+        card = tk.Frame(container, bg=Color.BG_CARD, padx=42, pady=36)
         card.pack()
 
         tk.Label(
             card,
             text="CHECKERS PRO",
             font=("Arial", 34, "bold"),
-            fg=self.FG_ACCENT,
-            bg=self.BG_CARD,
+            fg=Color.FG_ACCENT,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 6))
 
         tk.Label(
             card,
             text="Choose what you want to do",
             font=("Arial", 12),
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 26))
 
         self._create_menu_button(card, "NEW GAME", self.open_new_game).pack(
@@ -119,8 +108,8 @@ class CheckersUserInterface(tk.Tk):
             card,
             "EXIT",
             self.destroy,
-            bg=self.BG_DANGER,
-            hover_bg=self.BG_DANGER_HOVER,
+            bg=Color.BG_DANGER,
+            hover_bg=Color.BG_DANGER_HOVER,
         ).pack(fill="x", pady=(8, 0))
 
         # Keyboard shortcut
@@ -147,17 +136,17 @@ class CheckersUserInterface(tk.Tk):
         hover_bg: Optional[str] = None,
     ) -> tk.Button:
         """Create a themed menu button with hover effect."""
-        base_bg = bg or self.BG_BUTTON
-        over_bg = hover_bg or self.BG_BUTTON_HOVER
+        base_bg = bg or Color.BG_BUTTON
+        over_bg = hover_bg or Color.BG_BUTTON_HOVER
 
         button = tk.Button(
             parent,
             text=text,
             font=("Arial", 16, "bold"),
             bg=base_bg,
-            fg=self.FG_TEXT,
+            fg=Color.FG_TEXT,
             activebackground=over_bg,
-            activeforeground=self.FG_TEXT,
+            activeforeground=Color.FG_TEXT,
             bd=0,
             relief="flat",
             cursor="hand2",

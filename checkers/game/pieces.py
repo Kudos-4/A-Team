@@ -2,7 +2,8 @@ from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from typing import final
 
-from checkers.constants import ColorID
+from checkers.colors import ColorID
+from checkers.types import Position
 
 
 @dataclass
@@ -12,7 +13,7 @@ class Piece(ABC):
     relating to checkers. Only to update their data.
     """
 
-    _position: tuple[int, int]
+    _position: Position
     _color: ColorID
     _moveset: tuple[tuple[int, int], ...] = field(init=False)
 
@@ -24,11 +25,11 @@ class Piece(ABC):
         pass
 
     @property
-    def position(self) -> tuple[int, int]:
+    def position(self) -> Position:
         return self._position
 
     @position.setter
-    def position(self, new_position: tuple[int, int]) -> None:
+    def position(self, new_position: Position) -> None:
         self._position = new_position
 
     @property

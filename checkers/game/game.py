@@ -3,8 +3,9 @@
 from typing import Optional
 import itertools as itools
 
-from checkers.constants import ColorID
-from checkers.game import Board, Piece, Pawn, King, Position
+from checkers.colors import ColorID
+from checkers.types import Position, Move
+from checkers.game import Board, Piece, Pawn, King
 
 
 class Game:
@@ -117,10 +118,10 @@ class Game:
         # Use forced moves if any, else return regular moves
         return forced_moves or regular_moves
 
-    def all_moves_of_color(self, color: ColorID) -> list[tuple[Position, Position]]:
+    def all_moves_of_color(self, color: ColorID) -> list[Move]:
         """All legal moves that can be made for a player's turn."""
-        all_jumps: list[tuple[Position, Position]] = []
-        all_regular: list[tuple[Position, Position]] = []
+        all_jumps: list[Move] = []
+        all_regular: list[Move] = []
 
         for piece in self.pieces[color]:
             piece_moves = self.get_valid_moves(piece)

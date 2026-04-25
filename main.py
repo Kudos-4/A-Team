@@ -1,6 +1,6 @@
 """Main injection for running game in UI"""
 
-from checkers.user_interface import CheckersUserInterface
+from checkers.user_interface import MainMenuUI
 from checkers.auth import database
 
 
@@ -11,7 +11,7 @@ def main() -> None:
     """
     database.init_db()
     RESOLUTION = (1920, 1080)
-    ui = CheckersUserInterface(RESOLUTION)
+    ui = MainMenuUI(RESOLUTION)
     ui.mainloop()
 
 

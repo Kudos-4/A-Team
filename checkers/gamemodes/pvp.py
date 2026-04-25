@@ -1,4 +1,4 @@
-from checkers.game import Position
+from checkers.types import Position
 from checkers.gamemodes import GameMode
 
 

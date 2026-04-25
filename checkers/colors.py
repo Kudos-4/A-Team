@@ -12,6 +12,7 @@ class ColorID(Flag):
 class Color(StrEnum):
     """Contains hex values of colors."""
 
+    # App theme colors
     BG_APP = "#0f172a"
     BG_TOPBAR = "#111827"
     BG_CARD = "#1e293b"

@@ -1,14 +1,13 @@
 from typing import Optional
 
-from checkers.constants import ColorID
-
-from .pieces import Piece
-
+from checkers.colors import ColorID
+from checkers.game import Piece
+from checkers.types import Position
 
 class Tile:
     """Represents a cell on the board. Tiles should only be accessed through Board."""
 
-    def __init__(self, position: tuple[int, int], color: ColorID) -> None:
+    def __init__(self, position: Position, color: ColorID) -> None:
         self._position = position
         self._color = color
         self._notation: Optional[int]
@@ -28,7 +27,7 @@ class Tile:
         return previous_rows + current_row
 
     @property
-    def position(self) -> tuple[int, int]:
+    def position(self) -> Position:
         return self._position
 
     @property
@@ -57,7 +56,7 @@ class Board:
     belong in the Game class.
     """
 
-    def __init__(self, board_size: tuple[int, int]) -> None:
+    def __init__(self, board_size: Position) -> None:
         self._rows, self._cols = self.size = board_size
         self._board = self._initialize_board()
 
@@ -74,7 +73,7 @@ class Board:
             board.append(new_row)
         return board
 
-    def set_piece(self, position: tuple[int, int], piece: Piece) -> None:
+    def set_piece(self, position: Position, piece: Piece) -> None:
         """Add piece to an empty spot."""
         tile = self._tile_at(position)
         if tile.piece:
@@ -82,7 +81,7 @@ class Board:
         tile.piece = piece
 
     def move_piece(
-        self, position: tuple[int, int], new_position: tuple[int, int]
+        self, position: Position, new_position: Position
     ) -> None:
         """Move piece to an empty space. Does not handle if piece can reach; game controls rules."""
         # Board should modify tile.piece and update Piece.position
@@ -96,33 +95,33 @@ class Board:
         current_tile.piece = None
         new_tile.piece.position = new_position
 
-    def update_piece(self, position: tuple[int, int], new_piece: Piece) -> None:
+    def update_piece(self, position: Position, new_piece: Piece) -> None:
         tile = self._tile_at(position)
         if tile.piece is None:
             raise ValueError("No piece at position to replace.")
         tile.piece = new_piece
 
-    def remove_piece(self, position: tuple[int, int]) -> None:
+    def remove_piece(self, position: Position) -> None:
         tile = self._tile_at(position)
         if tile.piece is None:
             raise ValueError("No piece at position to be removed")
         tile.piece = None
 
-    def _tile_at(self, position: tuple[int, int]) -> Tile:
+    def _tile_at(self, position: Position) -> Tile:
         row, col = position
         return self._board[row][col]
 
-    def piece_at(self, position: tuple[int, int]) -> Optional[Piece]:
+    def piece_at(self, position: Position) -> Optional[Piece]:
         return self._tile_at(position).piece
 
-    def __getitem__(self, position: tuple[int, int]) -> Optional[Piece]:
+    def __getitem__(self, position: Position) -> Optional[Piece]:
         """Same as piece_at()"""
         return self.piece_at(position)
 
-    def get_color_at(self, position: tuple[int, int]) -> ColorID:
+    def get_color_at(self, position: Position) -> ColorID:
         return self._tile_at(position).color
 
-    def get_notation_at(self, position: tuple[int, int]) -> Optional[int]:
+    def get_notation_at(self, position: Position) -> Optional[int]:
         return self._tile_at(position).notation
 
     @property

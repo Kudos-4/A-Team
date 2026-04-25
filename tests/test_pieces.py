@@ -1,7 +1,7 @@
 import pytest
 
 from checkers.game import Pawn, King
-from checkers.constants.colors import ColorID
+from checkers.colors import ColorID
 
 
 @pytest.fixture

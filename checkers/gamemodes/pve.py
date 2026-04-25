@@ -4,7 +4,8 @@ import random
 import copy
 
 from checkers.user_interface import Player
-from checkers.game import Position, Move, Piece, King
+from checkers.types import Position, Move
+from checkers.game import Piece, King
 from checkers.gamemodes import GameMode
 
 if TYPE_CHECKING:
@@ -16,7 +17,7 @@ class GameState(GameMode):
         super().__init__(game_ui)
         del self._ui
 
-    def tile_pressed(self, position: tuple[int, int]) -> None:
+    def tile_pressed(self, position: Position) -> None:
         return super().tile_pressed(position)
 
 

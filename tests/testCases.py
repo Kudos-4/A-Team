@@ -10,7 +10,7 @@ import unittest
 from checkers.game.board import Board
 from checkers.game.pieces import Pawn, King
 from checkers.game.game import Game
-from checkers.constants.colors import ColorID
+from checkers.colors import ColorID
 
 
 # ---------------------------------------------------------------------------

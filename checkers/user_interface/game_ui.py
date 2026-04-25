@@ -8,7 +8,8 @@ from PIL import Image, ImageTk
 from tkinter import messagebox
 import tkinter as tk
 
-from checkers.constants import ColorID, Color
+from checkers.colors import ColorID, Color
+from checkers.types import Position
 from checkers.game import Game, King
 from checkers.gamemodes import GameMode, PvPGameMode, PvEGameMode
 from checkers.auth import auth_logic, database
@@ -40,7 +41,7 @@ class GameScreen(Screen):
         self.game_handler: GameMode
         self.icons = self.initialize_icons()
         self.tile_buttons: list[list[tk.Button]] = []
-        self.tile_default_bg: dict[tuple[int, int], str] = {}
+        self.tile_default_bg: dict[Position, str] = {}
 
         self.logs: list[str] = []
         self.start_date: datetime
@@ -398,7 +399,7 @@ class GameScreen(Screen):
     # Board rendering and interactions
     # -------------------------------------------------------------------------
 
-    def _get_image(self, position: tuple[int, int]) -> ImageTk.PhotoImage:
+    def _get_image(self, position: Position) -> ImageTk.PhotoImage:
         """Resolve the image for a tile based on piece and tile type."""
         if piece := self.game.get_piece_at(position):
             color = "dark" if piece.color == ColorID.DARK else "light"
@@ -409,10 +410,10 @@ class GameScreen(Screen):
         color = "dark" if tile_color == ColorID.DARK else "light"
         return self.icons[f"{color}-tile"]
 
-    def tile_clicked(self, position: tuple[int, int]) -> None:
+    def tile_clicked(self, position: Position) -> None:
         """Send user input to GameMode handler, and update UI afterwards"""
         self.game_handler.tile_pressed(position)  # Updates game state
-    
+
     def update_interface(self) -> None:
         self._clear_all_highlights()
         if selected_position := self.game_handler.get_selected():
@@ -443,9 +444,9 @@ class GameScreen(Screen):
 
     def update_logging(
         self,
-        old: tuple[int, int],
-        capture: Optional[tuple[int, int]],
-        new: tuple[int, int],
+        old: Position,
+        capture: Optional[Position],
+        new: Position,
     ) -> None:
         """Writes to both the log list and log ingame UI."""
         move_type = "x" if capture else "-"
@@ -455,7 +456,7 @@ class GameScreen(Screen):
         self.logs.append(move)
         self._append_log_line(move)
 
-    def _highlight_selected_and_moves(self, position: tuple[int, int]) -> None:
+    def _highlight_selected_and_moves(self, position: Position) -> None:
         """Highlight selected piece and all valid target moves."""
         self._set_tile_bg(position, Color.HL_SELECTED)
 
@@ -480,7 +481,7 @@ class GameScreen(Screen):
                 base_bg = self.tile_default_bg[(i, j)]
                 button.configure(bg=base_bg, activebackground=base_bg)
 
-    def _set_tile_bg(self, position: tuple[int, int], color: str) -> None:
+    def _set_tile_bg(self, position: Position, color: str) -> None:
         """Set a tile's background highlight color."""
         row, col = position
         button = self.tile_buttons[row][col]

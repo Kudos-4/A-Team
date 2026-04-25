@@ -1,5 +1,6 @@
 import pytest
 
+from checkers.types import Position
 from checkers.game import Game, Piece
 
 
@@ -18,7 +19,7 @@ def test_number_pieces(game: Game) -> None:
     assert len(game.light_pieces) == 12
 
 
-def is_black(position: tuple[int, int]) -> bool:
+def is_black(position: Position) -> bool:
     return bool(sum(position) % 2)
 
 

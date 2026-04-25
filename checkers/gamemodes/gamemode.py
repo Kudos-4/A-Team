@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
-from checkers.game import Game, Position
+from checkers.types import Position
+from checkers.game import Game
 
 if TYPE_CHECKING:
     from checkers.user_interface import GameScreen

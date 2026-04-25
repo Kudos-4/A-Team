@@ -5,6 +5,7 @@ from typing import Optional
 from PIL import Image, ImageTk
 
 from checkers.game import Game, King
+from checkers.types import Position
 
 _ASSET_DIR = Path("checkers") / "user_interface" / "assets"
 _BOARD_SIZE = (8, 8)
@@ -20,7 +21,7 @@ _ICON_FILES = {
 }
 
 
-def _notation_to_pos(notation: int) -> tuple[int, int]:
+def _notation_to_pos(notation: int) -> Position:
     """Convert 1-32 checkers square notation to (row, col) board position."""
     row = (notation - 1) // 4
     idx = (notation - 1) % 4
@@ -28,7 +29,7 @@ def _notation_to_pos(notation: int) -> tuple[int, int]:
     return (row, col)
 
 
-def _parse_move(move_str: str) -> Optional[tuple[int, int]]:
+def _parse_move(move_str: str) -> Optional[Position]:
     """Parse '12-16' or '12x22' into (from_notation, to_notation)."""
     try:
         sep = "x" if "x" in move_str else "-"
@@ -38,9 +39,9 @@ def _parse_move(move_str: str) -> Optional[tuple[int, int]]:
         return None
 
 
-def _snapshot(game: Game) -> dict[tuple[int, int], tuple[str, str]]:
+def _snapshot(game: Game) -> dict[Position, tuple[str, str]]:
     """Return {position: (color, piece_type)} for all current pieces."""
-    state: dict[tuple[int, int], tuple[str, str]] = {}
+    state: dict[Position, tuple[str, str]] = {}
     for piece in game.dark_pieces:
         state[piece.position] = ("dark", "king" if isinstance(piece, King) else "pawn")
     for piece in game.light_pieces:
@@ -50,7 +51,7 @@ def _snapshot(game: Game) -> dict[tuple[int, int], tuple[str, str]]:
 
 def _build_snapshots(
     moves: list[str],
-) -> list[dict[tuple[int, int], tuple[str, str]]]:
+) -> list[dict[Position, tuple[str, str]]]:
     """Simulate each move and collect a board snapshot after each one."""
     game = Game(_BOARD_SIZE)
     snapshots = [_snapshot(game)]
@@ -101,7 +102,7 @@ class ReplayScreen(tk.Toplevel):
         self._step = 0
         self._icons = self._load_icons()
         self._tile_btns: list[list[tk.Button]] = []
-        self._tile_bg: dict[tuple[int, int], str] = {}
+        self._tile_bg: dict[Position, str] = {}
 
         self._build_ui(opponent, result, date)
         self._render(0)
@@ -119,7 +120,11 @@ class ReplayScreen(tk.Toplevel):
         header = tk.Frame(self, bg=self._BG)
         header.pack(fill="x", padx=16, pady=(12, 4))
         tk.Label(
-            header, text="REPLAY", font=("Arial", 20, "bold"), fg=self._ACCENT, bg=self._BG
+            header,
+            text="REPLAY",
+            font=("Arial", 20, "bold"),
+            fg=self._ACCENT,
+            bg=self._BG,
         ).pack(side="left")
         tk.Label(
             header,
@@ -158,7 +163,9 @@ class ReplayScreen(tk.Toplevel):
             state="disabled",
         )
         self._move_list.pack()
-        self._move_list.tag_configure("current", background=self._HL_MOVE, foreground="#000000")
+        self._move_list.tag_configure(
+            "current", background=self._HL_MOVE, foreground="#000000"
+        )
         self._populate_move_list()
 
         nav = tk.Frame(self, bg=self._BG)

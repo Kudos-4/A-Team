@@ -1,4 +1,4 @@
-from checkers.constants import ColorID
+from checkers.colors import ColorID
 from dataclasses import dataclass
 
 
