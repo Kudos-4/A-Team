@@ -1,16 +1,46 @@
 """
 Usage:
-    python run_tests.py          # Run all tests
-    python run_tests.py --menu   # Choose specific tests via menu
+    python tests/testCases.py           # Run all tests
+    python tests/testCases.py --menu    # Choose specific tests via menu
 """
 
+import os
 import sys
 import unittest
+
+_TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_TESTS_DIR)
+# Project root → allows 'import checkers'; tests dir → allows sibling test imports
+for _p in (_PROJECT_ROOT, _TESTS_DIR):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from checkers.game.board import Board
 from checkers.game.pieces import Pawn, King
 from checkers.game.game import Game
 from checkers.constants.colors import ColorID
+
+# New test modules
+from test_game_logic import (
+    TestMoveHighlighting,
+    TestInvalidMoveOpponent,
+    TestKingPromotion,
+    TestCaptureDirection,
+    TestMultiJump,
+    TestForcedCapture,
+    TestGameEnd,
+    TestTurnIndicator,
+)
+from test_auth_db import (
+    TestRegistrationErrorMessage,
+    TestDuplicateRegistration,
+    TestLoginInvalidCredentials,
+    TestGameRecordDatabase,
+)
+from test_pve_logic import (
+    TestForcedCaptureLogic,
+    TestPvEComputer,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -127,13 +157,13 @@ class TestGame(unittest.TestCase):
         self.game = Game(board_size=(8, 8))
 
     def test_number_of_black_pieces(self):
-        self.assertEqual(len(self.game._black_pieces), 12)
+        self.assertEqual(len(self.game.dark_pieces), 12)
 
     def test_number_of_white_pieces(self):
-        self.assertEqual(len(self.game._white_pieces), 12)
+        self.assertEqual(len(self.game.light_pieces), 12)
 
     def test_pieces_on_black_squares(self):
-        all_pieces = self.game._black_pieces + self.game._white_pieces
+        all_pieces = self.game.dark_pieces + self.game.light_pieces
         self.assertTrue(
             all(
                 _is_black_square(self.game._board.cols, p.position)
@@ -142,7 +172,7 @@ class TestGame(unittest.TestCase):
         )
 
     def test_wrong_piece_position_detected(self):
-        all_pieces = self.game._black_pieces + self.game._white_pieces
+        all_pieces = self.game.dark_pieces + self.game.light_pieces
         all_pieces[0]._position = (0, 0)  # Force onto a white square
         self.assertFalse(
             all(
@@ -159,26 +189,65 @@ class TestGame(unittest.TestCase):
 # Menu + Runner
 # ---------------------------------------------------------------------------
 
+_loader = unittest.TestLoader()
+
+def _suite(*classes):
+    combined = unittest.TestSuite()
+    for cls in classes:
+        combined.addTests(_loader.loadTestsFromTestCase(cls))
+    return combined
+
 SUITES = {
-    "1": ("Pieces", unittest.TestLoader().loadTestsFromTestCase(TestPieces)),
-    "2": ("Board", unittest.TestLoader().loadTestsFromTestCase(TestBoard)),
-    "3": ("Game", unittest.TestLoader().loadTestsFromTestCase(TestGame)),
+    # --- Original suites (fixed) ---
+    "1": ("Pieces (AC 13.1, 15.4)",
+          _suite(TestPieces)),
+    "2": ("Board (AC 12.1–12.4, 14.1)",
+          _suite(TestBoard)),
+    "3": ("Game – Initialisation (AC 10.2, 12.2–12.3)",
+          _suite(TestGame)),
+    # --- New: game logic ---
+    "4": ("Game Logic – Highlighting & Selection (AC 13.2, 13.3, 13.4, 14.2)",
+          _suite(TestMoveHighlighting, TestInvalidMoveOpponent)),
+    "5": ("Game Logic – King Promotion (AC 15.1, 15.2, 15.5)",
+          _suite(TestKingPromotion)),
+    "6": ("Game Logic – Capture Direction (AC 16.2, 16.3)",
+          _suite(TestCaptureDirection)),
+    "7": ("Game Logic – Multi-Jump (AC 17.1, 17.2, 17.3)",
+          _suite(TestMultiJump)),
+    "8": ("Game Logic – Forced Capture & Game End (AC 18.2, 18.3, 19.1, 19.2)",
+          _suite(TestForcedCapture, TestGameEnd)),
+    "9": ("Game Logic – Turn Indicator (AC 22.2, 22.3)",
+          _suite(TestTurnIndicator)),
+    # --- New: auth & database ---
+    "10": ("Auth – Registration Errors (AC 1.3)",
+           _suite(TestRegistrationErrorMessage)),
+    "11": ("Auth – Duplicate Check (AC 3.1, 3.2)",
+           _suite(TestDuplicateRegistration)),
+    "12": ("Auth – Login Validation (AC 7.1)",
+           _suite(TestLoginInvalidCredentials)),
+    "13": ("Database – Game Records (AC 20.2, 20.3, 23.3, 30.1, 30.2)",
+           _suite(TestGameRecordDatabase)),
+    # --- New: PvE / computer opponent ---
+    "14": ("PvE – Forced Capture Logic (AC 26.2)",
+           _suite(TestForcedCaptureLogic)),
+    "15": ("PvE – Computer & Minimax (AC 26.1, 26.3, 27.1, 29.1–29.3)",
+           _suite(TestPvEComputer)),
 }
 
 
-def run_suite(label: str, suite: unittest.TestSuite) -> None:
-    print(f"\n{'=' * 50}")
-    print(f"  Running: {label}")
-    print(f"{'=' * 50}")
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite)
+def run_suite(label: str, suite: unittest.TestSuite) -> unittest.TestResult:
+    print(f"\n{'=' * 60}")
+    print(f"  {label}")
+    print(f"{'=' * 60}")
+    runner = unittest.TextTestRunner(verbosity=2, stream=sys.stdout)
+    return runner.run(suite)
 
 
 def menu() -> None:
     print("\nSelect a test group to run:")
     for key, (label, _) in SUITES.items():
-        print(f"  {key}. {label}")
-    print("  0. Exit")
+        print(f"  {key:>2}. {label}")
+    print("   0. Exit")
 
     choice = input("\nEnter choice: ").strip()
     if choice == "0":
@@ -192,10 +261,25 @@ def menu() -> None:
 
 
 def run_all() -> None:
-    all_suites = unittest.TestSuite(suite for _, suite in SUITES.values())
-    print("\nRunning all tests...\n")
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(all_suites)
+    print("\n" + "=" * 60)
+    print("  A-TEAM CHECKERS — Full Automated Test Suite")
+    print("=" * 60)
+
+    total_run = total_failures = total_errors = 0
+
+    for label, suite in SUITES.values():
+        result = run_suite(label, suite)
+        total_run      += result.testsRun
+        total_failures += len(result.failures)
+        total_errors   += len(result.errors)
+
+    passed = total_run - total_failures - total_errors
+    status = "ALL PASSED" if (total_failures + total_errors) == 0 else "SOME FAILURES"
+    print("\n" + "=" * 60)
+    print(f"  {status}")
+    print(f"  Total: {total_run}  |  Passed: {passed}  |  "
+          f"Failed: {total_failures}  |  Errors: {total_errors}")
+    print("=" * 60 + "\n")
 
 
 if __name__ == "__main__":
