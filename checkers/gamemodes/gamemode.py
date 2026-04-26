@@ -14,7 +14,7 @@ class GameMode(ABC):
 
     def __init__(self, game_ui: GameScreen) -> None:
         self._ui = game_ui
-        self._game: Game = game_ui.game
+        self._game: Game = game_ui._game
         self._selected_tile: Optional[Position] = None
         # Holds tuple of positions of (old, captured, new)
         self._previous_move: tuple[Position, Optional[Position], Position]
@@ -79,12 +79,15 @@ class GameMode(ABC):
             return new_position
         return old_position
 
-    def get_previous_move(self) -> tuple[Position, Optional[Position], Position]:
+    @property
+    def previous_move(self) -> tuple[Position, Optional[Position], Position]:
         """Return string notation of the previous game move."""
         return self._previous_move
 
-    def get_selected(self) -> Optional[Position]:
+    @property
+    def selected_position(self) -> Optional[Position]:
         return self._selected_tile
 
-    def get_valid_move_made(self) -> bool:
+    @property
+    def valid_move_made(self) -> bool:
         return self._made_valid_move

@@ -9,7 +9,7 @@ from checkers.game import Board, Piece, Pawn, King
 
 
 class Game:
-    def __init__(self, board_size: Position) -> None:
+    def __init__(self, board_size: tuple[int, int]) -> None:
         self._board = Board(board_size)
         self._turn = ColorID.DARK
 
@@ -65,9 +65,7 @@ class Game:
             self._board.remove_piece(captured.position)
 
         self._board.move_piece(piece_position, new_position)
-        same_piece = self._board.piece_at(new_position)
-        assert same_piece
-        self._check_promotion(same_piece)
+        self._check_promotion(piece)
 
         made_capture = any(valid_moves.values())
         can_still_capture = any(self.get_valid_moves(piece).values())
@@ -148,20 +146,19 @@ class Game:
 
     def _switch_turn(self) -> None:
         # swap whose turn it is after a move
-        self._turn = ColorID.LIGHT if self._turn == ColorID.DARK else ColorID.DARK
+        self._turn = ~self._turn
 
     def _check_promotion(self, piece: Piece) -> None:
         # promote pawn if it reached the last row
         if not isinstance(piece, Pawn):
             return
-        target_row = self._board.rows - 1 if piece.color == ColorID.DARK else 0
+        target_row = 0 if piece.color else self._board.rows - 1
         if piece.position[0] == target_row:
             self._promote_pawn(piece)
 
     def get_game_winner(self) -> Optional[ColorID]:
         """Returns the ColorID of the winner if game is done."""
-        mapping = ((ColorID.LIGHT, self.light_pieces), (ColorID.DARK, self.dark_pieces))
-        for color, pieces in mapping:
+        for color, pieces in self.pieces.items():
             no_pieces_left = not pieces
             no_moves_left = not any(map(self.get_valid_moves, pieces))
             if no_pieces_left or no_moves_left:

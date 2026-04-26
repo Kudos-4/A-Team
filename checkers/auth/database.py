@@ -1,9 +1,9 @@
-import sqlite3
-import os
 from typing import Optional
+from pathlib import Path
+import sqlite3
 import json
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "../../checkers.db")
+DB_PATH = Path.cwd() / "checkers.db"
 
 def get_connection() -> sqlite3.Connection:
     """Get a connection to the SQLite database."""

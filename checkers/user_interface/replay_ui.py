@@ -1,24 +1,13 @@
-import tkinter as tk
-from pathlib import Path
 from typing import Optional
 
-from PIL import Image, ImageTk
+import tkinter as tk
 
+from checkers.user_interface import AssetHandler
 from checkers.game import Game, King
 from checkers.types import Position
+from checkers.colors import ColorID, Color
 
-_ASSET_DIR = Path("checkers") / "user_interface" / "assets"
-_BOARD_SIZE = (8, 8)
-_TILE_PX = 72
-
-_ICON_FILES = {
-    "light-tile": "LightTile.png",
-    "dark-tile": "DarkTile.png",
-    "dark-pawn": "DarkPawn.png",
-    "dark-king": "DarkKing.png",
-    "light-pawn": "LightPawn.png",
-    "light-king": "LightKing.png",
-}
+BOARD_SIZE = (8, 8)
 
 
 def _notation_to_pos(notation: int) -> Position:
@@ -53,7 +42,7 @@ def _build_snapshots(
     moves: list[str],
 ) -> list[dict[Position, tuple[str, str]]]:
     """Simulate each move and collect a board snapshot after each one."""
-    game = Game(_BOARD_SIZE)
+    game = Game(BOARD_SIZE)
     snapshots = [_snapshot(game)]
     for move_str in moves:
         parsed = _parse_move(move_str)
@@ -72,14 +61,6 @@ def _build_snapshots(
 class ReplayScreen(tk.Toplevel):
     """Step-through board replay for a completed checkers game."""
 
-    _BG = "#0f172a"
-    _BG_CARD = "#1e293b"
-    _BG_PANEL = "#233247"
-    _BG_BTN = "#334155"
-    _BG_BTN_HV = "#475569"
-    _FG = "#f8fafc"
-    _FG_MUTED = "#94a3b8"
-    _ACCENT = "#f43f5e"
     _TILE_DARK = "#1f2937"
     _TILE_LIGHT = "#334155"
     _HL_MOVE = "#f59e0b"
@@ -94,13 +75,13 @@ class ReplayScreen(tk.Toplevel):
     ) -> None:
         super().__init__(parent)
         self.title(f"Replay — vs {opponent}")
-        self.configure(bg=self._BG)
+        self.configure(bg=Color.BG_APP)
         self.resizable(False, False)
 
         self._moves = moves
         self._snapshots = _build_snapshots(moves)
         self._step = 0
-        self._icons = self._load_icons()
+        self._icons = AssetHandler(icon_pixel_size=72)
         self._tile_btns: list[list[tk.Button]] = []
         self._tile_bg: dict[Position, str] = {}
 
@@ -108,53 +89,45 @@ class ReplayScreen(tk.Toplevel):
         self._render(0)
         self._center()
 
-    def _load_icons(self) -> dict[str, ImageTk.PhotoImage]:
-        icons: dict[str, ImageTk.PhotoImage] = {}
-        for key, filename in _ICON_FILES.items():
-            icons[key] = ImageTk.PhotoImage(
-                Image.open(_ASSET_DIR / filename).resize((_TILE_PX, _TILE_PX))
-            )
-        return icons
-
     def _build_ui(self, opponent: str, result: str, date: str) -> None:
-        header = tk.Frame(self, bg=self._BG)
+        header = tk.Frame(self, bg=Color.BG_APP)
         header.pack(fill="x", padx=16, pady=(12, 4))
         tk.Label(
             header,
             text="REPLAY",
             font=("Arial", 20, "bold"),
-            fg=self._ACCENT,
-            bg=self._BG,
+            fg=Color.FG_ACCENT,
+            bg=Color.BG_APP,
         ).pack(side="left")
         tk.Label(
             header,
             text=f"vs {opponent}  |  {result}  |  {date}",
             font=("Arial", 11),
-            fg=self._FG_MUTED,
-            bg=self._BG,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_APP,
         ).pack(side="left", padx=14)
 
-        body = tk.Frame(self, bg=self._BG)
+        body = tk.Frame(self, bg=Color.BG_APP)
         body.pack(fill="both", expand=True, padx=16, pady=8)
 
         self._init_board(body)
 
-        panel = tk.Frame(body, bg=self._BG_CARD, padx=10, pady=10)
+        panel = tk.Frame(body, bg=Color.BG_CARD, padx=10, pady=10)
         panel.pack(side="left", fill="y", padx=(14, 0))
         tk.Label(
             panel,
             text="Move List",
             font=("Arial", 11, "bold"),
-            fg=self._FG_MUTED,
-            bg=self._BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
         ).pack(anchor="w", pady=(0, 4))
 
         self._move_list = tk.Text(
             panel,
             width=18,
             height=24,
-            bg=self._BG_PANEL,
-            fg=self._FG,
+            bg=Color.BG_PANEL,
+            fg=Color.FG_TEXT,
             font=("Consolas", 10),
             bd=0,
             relief="flat",
@@ -168,17 +141,17 @@ class ReplayScreen(tk.Toplevel):
         )
         self._populate_move_list()
 
-        nav = tk.Frame(self, bg=self._BG)
+        nav = tk.Frame(self, bg=Color.BG_APP)
         nav.pack(pady=(4, 14))
 
         self._prev_btn = tk.Button(
             nav,
             text="← Prev",
             font=("Arial", 11, "bold"),
-            bg=self._BG_BTN,
-            fg=self._FG,
-            activebackground=self._BG_BTN_HV,
-            activeforeground=self._FG,
+            bg=Color.BG_BUTTON,
+            fg=Color.FG_TEXT,
+            activebackground=Color.BG_BUTTON_HOVER,
+            activeforeground=Color.FG_TEXT,
             bd=0,
             relief="flat",
             padx=16,
@@ -189,7 +162,12 @@ class ReplayScreen(tk.Toplevel):
         self._prev_btn.pack(side="left", padx=6)
 
         self._step_lbl = tk.Label(
-            nav, text="", font=("Arial", 11), fg=self._FG, bg=self._BG, width=14
+            nav,
+            text="",
+            font=("Arial", 11),
+            fg=Color.FG_TEXT,
+            bg=Color.BG_APP,
+            width=14,
         )
         self._step_lbl.pack(side="left", padx=8)
 
@@ -197,10 +175,10 @@ class ReplayScreen(tk.Toplevel):
             nav,
             text="Next →",
             font=("Arial", 11, "bold"),
-            bg=self._BG_BTN,
-            fg=self._FG,
-            activebackground=self._BG_BTN_HV,
-            activeforeground=self._FG,
+            bg=Color.BG_BUTTON,
+            fg=Color.FG_TEXT,
+            activebackground=Color.BG_BUTTON_HOVER,
+            activeforeground=Color.FG_TEXT,
             bd=0,
             relief="flat",
             padx=16,
@@ -214,9 +192,9 @@ class ReplayScreen(tk.Toplevel):
         self.bind("<Right>", lambda _e: self._step_forward())
 
     def _init_board(self, parent: tk.Widget) -> None:
-        board_frame = tk.Frame(parent, bg=self._BG)
+        board_frame = tk.Frame(parent, bg=Color.BG_APP)
         board_frame.pack(side="left")
-        rows, cols = _BOARD_SIZE
+        rows, cols = BOARD_SIZE
         for i in range(rows):
             row_btns: list[tk.Button] = []
             for j in range(cols):
@@ -224,9 +202,10 @@ class ReplayScreen(tk.Toplevel):
                 is_dark = (i + j) % 2 == 1
                 bg = self._TILE_DARK if is_dark else self._TILE_LIGHT
                 self._tile_bg[pos] = bg
+                color = ColorID(not is_dark)
                 btn = tk.Button(
                     board_frame,
-                    image=self._icons["dark-tile" if is_dark else "light-tile"],
+                    image=self._icons.get(color, self._icons.TILE),
                     bg=bg,
                     activebackground=bg,
                     bd=0,
@@ -246,18 +225,21 @@ class ReplayScreen(tk.Toplevel):
     def _render(self, step: int) -> None:
         self._step = step
         snapshot = self._snapshots[step]
-        rows, cols = _BOARD_SIZE
+        rows, cols = BOARD_SIZE
 
         for i in range(rows):
             for j in range(cols):
                 pos = (i, j)
                 if pos in snapshot:
                     color, ptype = snapshot[pos]
-                    image_key = f"{color}-{ptype}"
+                    color = ColorID(color == "light")
+                    ptype = self._icons.KING if ptype == "king" else self._icons.PAWN
+                    image_key = (color, ptype)
                 else:
                     is_dark = (i + j) % 2 == 1
-                    image_key = "dark-tile" if is_dark else "light-tile"
-                self._tile_btns[i][j].configure(image=self._icons[image_key])
+                    color = ColorID(not is_dark)
+                    image_key = (color, self._icons.TILE)
+                self._tile_btns[i][j].configure(image=self._icons.get(*image_key))
 
         total = len(self._moves)
         self._step_lbl.configure(text=f"Move {step} of {total}")

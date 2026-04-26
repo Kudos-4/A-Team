@@ -4,6 +4,7 @@ from checkers.colors import ColorID
 from checkers.game import Piece
 from checkers.types import Position
 
+
 class Tile:
     """Represents a cell on the board. Tiles should only be accessed through Board."""
 
@@ -56,7 +57,7 @@ class Board:
     belong in the Game class.
     """
 
-    def __init__(self, board_size: Position) -> None:
+    def __init__(self, board_size: tuple[int, int]) -> None:
         self._rows, self._cols = self.size = board_size
         self._board = self._initialize_board()
 
@@ -80,9 +81,7 @@ class Board:
             raise ValueError("Position is already occupied with piece.")
         tile.piece = piece
 
-    def move_piece(
-        self, position: Position, new_position: Position
-    ) -> None:
+    def move_piece(self, position: Position, new_position: Position) -> None:
         """Move piece to an empty space. Does not handle if piece can reach; game controls rules."""
         # Board should modify tile.piece and update Piece.position
         current_tile = self._tile_at(position)

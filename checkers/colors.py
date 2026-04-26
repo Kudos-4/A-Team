@@ -3,7 +3,8 @@ from enum import Flag, StrEnum
 
 class ColorID(Flag):
     """Acts as an identifier for player pieces and tile squares.
-    Can somewhat be treated as an integer (such as truthiness)."""
+    Can be treated as a bit subclassed from integer.
+    Can be negated (~) to flip flags or used for truthiness."""
 
     DARK = 0
     LIGHT = 1

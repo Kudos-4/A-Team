@@ -14,7 +14,7 @@ from checkers.auth.database import get_connection
 def register_user(username: str, email: str, password: str) -> tuple[bool, str]:
     """
     Register a new user. Returns (success, message).
-    Paassword is hashed before storing. Handles unique username/email constraints.
+    Password is hashed before storing. Handles unique username/email constraints.
     """
     username = username.lower()
     email = email.lower()

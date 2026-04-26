@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 
 class GameState(GameMode):
+    """Isolated game copy to emulate player-computer interactions."""
+
     def __init__(self, game_ui: GameScreen) -> None:
         super().__init__(game_ui)
         del self._ui
@@ -24,7 +26,7 @@ class GameState(GameMode):
 class PvEGameMode(GameMode):
     def __init__(self, game_ui: GameScreen, players: tuple[Player, Player]) -> None:
         super().__init__(game_ui)
-        self.player1, self.player2 = players
+        self._player1, self._player2 = players
         self.max_depth: int = 2
         self.move_delay_ms: int = 500
         self._gamestate = GameState(game_ui)
@@ -43,13 +45,13 @@ class PvEGameMode(GameMode):
         # Make computer move afterwards
         if self._game.get_game_winner() is not None:
             return
-        # In case of multiple player's multiple captures
+        # In case of player's multiple captures
         if not self.is_computers_turn():
             return
         self._make_move()
 
     def is_computers_turn(self) -> bool:
-        return self.player2.color == self._game.turn
+        return self._player2.color == self._game.turn
 
     def _make_move(self) -> None:
         best_moves = self._compute_best_moves()
@@ -75,9 +77,6 @@ class PvEGameMode(GameMode):
         highest_score: Optional[int] = None
         best_moves: list[Move] = []
 
-        if not self.is_computers_turn():
-            return best_moves
-
         for move in self._game.all_moves_of_color(self._game.turn):
             gamestate = self._new_gamestate(self._gamestate, move)
             score = self._minimax(gamestate, self.max_depth)
@@ -93,28 +92,31 @@ class PvEGameMode(GameMode):
         return best_moves
 
     def _minimax(self, gamestate: GameState, depth: int) -> int:
+        """Recursively searches all decision with a given depth
+        using score function to evaluate the best move."""
         if not depth or gamestate._game.get_game_winner() is not None:
             return self._score_by_piece_value(gamestate)
 
         # Maximize score for computer, minimize score for human
         # This makes it assume the player plays optimally
         # Getting the best move from biggest difference in score
-        maximize_score = self.player2.color == gamestate._game.turn
-        best = float("-inf") if maximize_score else float("inf")
+        maximize_score = self._player2.color == gamestate._game.turn
+        best: Optional[int] = None
         comparator = max if maximize_score else min
 
         for move in gamestate._game.all_moves_of_color(gamestate._game.turn):
             new_gamestate = self._new_gamestate(gamestate, move)
             score = self._minimax(new_gamestate, depth - 1)
-            best = comparator(best, score)
-        return int(best)
+            best = score if best is None else comparator(best, score)
+        assert best is not None
+        return best
 
     def _score_by_piece_value(self, gamestate: GameState) -> int:
-        """Evaluate by piece count with a king as additional value"""
-        player_pieces = gamestate._game.pieces_of_color(self.player1.color)
+        """Evaluate by piece count with a king as additional value."""
+        player_pieces = gamestate._game.pieces_of_color(self._player1.color)
         player_value = len(player_pieces) + self._number_of_kings(player_pieces)
 
-        computer_pieces = gamestate._game.pieces_of_color(self.player2.color)
+        computer_pieces = gamestate._game.pieces_of_color(self._player2.color)
         computer_value = len(computer_pieces) + self._number_of_kings(computer_pieces)
         return computer_value - player_value
 
@@ -122,6 +124,7 @@ class PvEGameMode(GameMode):
         return sum(isinstance(piece, King) for piece in pieces)
 
     def _new_gamestate(self, gamestate: GameState, move: Move) -> GameState:
+        """Create new gamestate from the move decision."""
         gamestate = copy.deepcopy(self._gamestate)
         for position in move:
             gamestate.tile_pressed(position)
