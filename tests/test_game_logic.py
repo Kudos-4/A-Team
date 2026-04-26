@@ -8,7 +8,7 @@ Covers ACs: 13.2, 13.3, 13.4, 14.2, 15.1, 15.2, 15.5,
 import unittest
 from checkers.game.game import Game
 from checkers.game.pieces import Pawn, King
-from checkers.constants.colors import ColorID
+from checkers.colors import ColorID
 
 
 # ---------------------------------------------------------------------------

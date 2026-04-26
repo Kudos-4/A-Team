@@ -11,7 +11,7 @@ import unittest
 
 from checkers.game.game import Game
 from checkers.game.pieces import Pawn, King
-from checkers.constants.colors import ColorID
+from checkers.colors import ColorID
 from checkers.user_interface.player import Player
 from checkers.gamemodes.pve import PvEGameMode, GameState
 
@@ -22,7 +22,7 @@ from checkers.gamemodes.pve import PvEGameMode, GameState
 
 class MockGameUI:
     def __init__(self, game: Game) -> None:
-        self.game = game
+        self._game = game
 
     def after(self, *args, **kwargs) -> None:   # replaces tk.after scheduling
         pass
@@ -167,11 +167,10 @@ class TestPvEComputer(unittest.TestCase):
         _add(game, Pawn((3, 2), ColorID.DARK))
         _add(game, Pawn((5, 4), ColorID.LIGHT))
         game._turn = ColorID.LIGHT
-        mock_ui = MockGameUI(game)
         pve = _make_pve(game)
-        selected_before = pve.get_selected()
+        selected_before = pve.selected_position
         pve.tile_pressed((3, 2))   # player tries to interact on computer's turn
-        self.assertEqual(pve.get_selected(), selected_before)
+        self.assertEqual(pve.selected_position, selected_before)
 
     # --- AC 29.1, 29.2, 29.3 -----------------------------------------------
 
