@@ -183,7 +183,7 @@ class GameScreen(Screen):
             card,
             textvariable=error_var,
             font=("Arial", 10),
-            fg="#ef4444",
+            fg=Color.ERROR,
             bg=Color.BG_CARD,
             wraplength=420,
         ).pack(pady=(0, 10))
@@ -361,7 +361,7 @@ class GameScreen(Screen):
                 position = (i, j)
                 tile_color = self._game.get_tile_color_at(position)
 
-                base_bg = "#334155" if tile_color else "#1f2937"
+                base_bg = Color.BG_BUTTON if tile_color else Color.BG_BUTTON_DARK
                 self._tile_default_bg[position] = base_bg
 
                 button = tk.Button(
@@ -528,11 +528,11 @@ class GameScreen(Screen):
         if winner:
             winner_text = f"🏆 Congratulations, {winner}!"
             detail_text = f"Game finished in {len(self._logs)} move(s)."
-            color = "#22c55e"
+            color = Color.SUCCESS
         else:
             winner_text = "🤝 Draw!"
             detail_text = f"Game ended in a draw after {len(self._logs)} move(s)."
-            color = "#f59e0b"
+            color = Color.HL_FORCED
 
         tk.Label(
             card,

@@ -3,9 +3,9 @@ from tkinter import ttk, messagebox
 from datetime import datetime
 from typing import Any
 
+from checkers.colors import Color
 from checkers.auth import database
-from checkers.user_interface import Screen
-from checkers.user_interface.replay_ui import ReplayScreen
+from checkers.user_interface import Screen, ReplayScreen
 
 
 class GameHistoryScreen(Screen):
@@ -14,26 +14,12 @@ class GameHistoryScreen(Screen):
     def __init__(self, user_id: int) -> None:
         super().__init__()
         self.user_id = user_id
-
-        # Theme palette
-        self.BG_APP = "#0f172a"
-        self.BG_TOPBAR = "#111827"
-        self.BG_CARD = "#1e293b"
-        self.BG_HEADER = "#334155"
-        self.BG_ROW_A = "#243447"
-        self.BG_ROW_B = "#1f2f42"
-        self.BG_BUTTON = "#334155"
-        self.BG_BUTTON_HOVER = "#475569"
-        self.FG_TEXT = "#f8fafc"
-        self.FG_MUTED = "#94a3b8"
-        self.FG_ACCENT = "#f43f5e"
-
-        self.configure(background=self.BG_APP)
+        self.configure(background=Color.BG_APP)
 
     def run(self) -> None:
         """Initialize and render the game history screen."""
         self.clear_screen()
-        self.configure(background=self.BG_APP)
+        self.configure(background=Color.BG_APP)
 
         self._create_top_bar()
         self._create_header()
@@ -42,57 +28,57 @@ class GameHistoryScreen(Screen):
 
     def _create_top_bar(self) -> None:
         """Create a slim top bar for visual consistency."""
-        top_bar = tk.Frame(self, bg=self.BG_TOPBAR)
+        top_bar = tk.Frame(self, bg=Color.BG_TOPBAR)
         top_bar.pack(fill="x", padx=16, pady=(10, 0))
 
         tk.Label(
             top_bar,
             text="Checkers Pro",
             font=("Arial", 11, "bold"),
-            fg=self.FG_MUTED,
-            bg=self.BG_TOPBAR,
+            fg=Color.FG_TEXT,
+            bg=Color.BG_TOPBAR,
             padx=8,
             pady=8,
         ).pack(side="left")
 
     def _create_header(self) -> None:
         """Create the title section."""
-        header_frame = tk.Frame(self, background=self.BG_APP)
+        header_frame = tk.Frame(self, background=Color.BG_APP)
         header_frame.pack(fill="x", pady=(18, 6))
 
         tk.Label(
             header_frame,
             text="GAME HISTORY",
             font=("Arial", 34, "bold"),
-            fg=self.FG_ACCENT,
-            bg=self.BG_APP,
+            fg=Color.FG_ACCENT,
+            bg=Color.BG_APP,
         ).pack()
 
         tk.Label(
             header_frame,
             text="Review your recent matches and results",
             font=("Arial", 12),
-            fg=self.FG_MUTED,
-            bg=self.BG_APP,
+            fg=Color.FG_TEXT,
+            bg=Color.BG_APP,
         ).pack(pady=(6, 0))
 
     def _create_game_history_table(self) -> None:
         """Create a scrollable table for game history."""
-        card = tk.Frame(self, bg=self.BG_CARD, padx=16, pady=16)
+        card = tk.Frame(self, bg=Color.BG_CARD, padx=16, pady=16)
         card.pack(fill="both", expand=True, padx=28, pady=16)
 
-        table_frame = tk.Frame(card, background=self.BG_CARD)
+        table_frame = tk.Frame(card, background=Color.BG_CARD)
         table_frame.pack(fill="both", expand=True)
 
         canvas = tk.Canvas(
             table_frame,
-            background=self.BG_CARD,
+            background=Color.BG_CARD,
             highlightthickness=0,
             bd=0,
         )
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=canvas.yview)
 
-        scrollable_frame = tk.Frame(canvas, background=self.BG_CARD)
+        scrollable_frame = tk.Frame(canvas, background=Color.BG_CARD)
 
         # Keep canvas scroll region in sync with content size
         scrollable_frame.bind(
@@ -136,23 +122,23 @@ class GameHistoryScreen(Screen):
 
     def _show_no_history_message(self, parent: tk.Frame) -> None:
         """Show a friendly empty-state message when no history exists."""
-        message_frame = tk.Frame(parent, background=self.BG_CARD)
+        message_frame = tk.Frame(parent, background=Color.BG_CARD)
         message_frame.pack(expand=True, fill="both", pady=90)
 
         tk.Label(
             message_frame,
             text="No game history available",
             font=("Arial", 24, "bold"),
-            fg=self.FG_TEXT,
-            bg=self.BG_CARD,
+            fg=Color.FG_TEXT,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 10))
 
         tk.Label(
             message_frame,
             text="Play some games and your records will appear here.",
             font=("Arial", 14),
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_TEXT,
+            bg=Color.BG_CARD,
         ).pack()
 
     def _create_table_headers(self, parent: tk.Frame) -> None:
@@ -171,8 +157,8 @@ class GameHistoryScreen(Screen):
                 parent,
                 text=col_text,
                 font=("Arial", 13, "bold"),
-                fg=self.FG_TEXT,
-                bg=self.BG_HEADER,
+                fg=Color.FG_TEXT,
+                bg=Color.BG_BUTTON,
                 padx=10,
                 pady=10,
                 anchor="w",
@@ -185,14 +171,14 @@ class GameHistoryScreen(Screen):
         for idx, raw_game in enumerate(game_history):
             game = self._normalize_game_record(raw_game)
 
-            bg_color = self.BG_ROW_A if idx % 2 == 0 else self.BG_ROW_B
+            bg_color = Color.BG_ROW_A if idx % 2 == 0 else Color.BG_ROW_B
             grid_row = idx + 1
 
             tk.Label(
                 parent,
                 text=game["date"],
                 font=("Arial", 11),
-                fg=self.FG_TEXT,
+                fg=Color.FG_TEXT,
                 bg=bg_color,
                 padx=10,
                 pady=12,
@@ -203,7 +189,7 @@ class GameHistoryScreen(Screen):
                 parent,
                 text=game["time"],
                 font=("Arial", 11),
-                fg=self.FG_TEXT,
+                fg=Color.FG_TEXT,
                 bg=bg_color,
                 padx=10,
                 pady=12,
@@ -214,7 +200,7 @@ class GameHistoryScreen(Screen):
                 parent,
                 text=game["opponent"],
                 font=("Arial", 11, "bold"),
-                fg=self.FG_TEXT,
+                fg=Color.FG_TEXT,
                 bg=bg_color,
                 padx=10,
                 pady=12,
@@ -236,7 +222,7 @@ class GameHistoryScreen(Screen):
                 parent,
                 text=str(game["total_moves"]),
                 font=("Arial", 11),
-                fg=self.FG_TEXT,
+                fg=Color.FG_TEXT,
                 bg=bg_color,
                 padx=10,
                 pady=12,
@@ -252,9 +238,9 @@ class GameHistoryScreen(Screen):
                 btn_frame,
                 text="View Moves",
                 font=("Arial", 10, "bold"),
-                bg="#3b82f6",
+                bg=Color.HL_SELECTED,
                 fg="white",
-                activebackground="#2563eb",
+                activebackground=Color.MV_RECORD_BTN,
                 activeforeground="white",
                 relief="flat",
                 bd=0,
@@ -307,33 +293,37 @@ class GameHistoryScreen(Screen):
         """Return text color based on result."""
         normalized = result.lower().strip()
         if normalized == "win":
-            return "#22c55e"
+            return Color.SUCCESS
         if normalized == "loss":
-            return "#ef4444"
+            return Color.ERROR
         if normalized == "draw":
-            return "#f59e0b"
-        return self.FG_TEXT
+            return Color.HL_FORCED
+        return Color.FG_TEXT
 
-    def _open_move_record(self, moves: list[Any], opponent: str, result: str, date: str) -> None:
+    def _open_move_record(
+        self, moves: list[Any], opponent: str, result: str, date: str
+    ) -> None:
         """Open the replay visualization for a past game."""
         if not moves:
-            messagebox.showinfo("Move Record", "No move record data is available for this game.")
+            messagebox.showinfo(
+                "Move Record", "No move record data is available for this game."
+            )
             return
         ReplayScreen(self, moves, opponent, result, date)
 
     def _create_back_button(self) -> None:
         """Create a themed back button."""
-        button_frame = tk.Frame(self, background=self.BG_APP)
+        button_frame = tk.Frame(self, background=Color.BG_APP)
         button_frame.pack(pady=(0, 22))
 
         back_button = tk.Button(
             button_frame,
             text="← Back to Main Menu",
             font=("Arial", 14, "bold"),
-            bg=self.BG_BUTTON,
-            fg=self.FG_TEXT,
-            activebackground=self.BG_BUTTON_HOVER,
-            activeforeground=self.FG_TEXT,
+            bg=Color.BG_BUTTON,
+            fg=Color.FG_TEXT,
+            activebackground=Color.BG_BUTTON_HOVER,
+            activeforeground=Color.FG_TEXT,
             relief="flat",
             bd=0,
             cursor="hand2",
@@ -344,6 +334,8 @@ class GameHistoryScreen(Screen):
         back_button.pack()
 
         back_button.bind(
-            "<Enter>", lambda _e: back_button.configure(bg=self.BG_BUTTON_HOVER)
+            "<Enter>", lambda _e: back_button.configure(bg=Color.BG_BUTTON_HOVER)
         )
-        back_button.bind("<Leave>", lambda _e: back_button.configure(bg=self.BG_BUTTON))
+        back_button.bind(
+            "<Leave>", lambda _e: back_button.configure(bg=Color.BG_BUTTON)
+        )

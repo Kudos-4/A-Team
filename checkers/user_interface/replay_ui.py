@@ -61,13 +61,10 @@ def _build_snapshots(
 class ReplayScreen(tk.Toplevel):
     """Step-through board replay for a completed checkers game."""
 
-    _TILE_DARK = "#1f2937"
-    _TILE_LIGHT = "#334155"
-    _HL_MOVE = "#f59e0b"
 
     def __init__(
         self,
-        parent: tk.Widget,
+        parent: tk.Toplevel,
         moves: list[str],
         opponent: str,
         result: str,
@@ -137,7 +134,7 @@ class ReplayScreen(tk.Toplevel):
         )
         self._move_list.pack()
         self._move_list.tag_configure(
-            "current", background=self._HL_MOVE, foreground="#000000"
+            "current", background=Color.HL_FORCED, foreground=Color.BLACK
         )
         self._populate_move_list()
 
@@ -200,7 +197,7 @@ class ReplayScreen(tk.Toplevel):
             for j in range(cols):
                 pos = (i, j)
                 is_dark = (i + j) % 2 == 1
-                bg = self._TILE_DARK if is_dark else self._TILE_LIGHT
+                bg = Color.BG_BUTTON_DARK if is_dark else Color.BG_BUTTON
                 self._tile_bg[pos] = bg
                 color = ColorID(not is_dark)
                 btn = tk.Button(

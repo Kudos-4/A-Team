@@ -9,10 +9,12 @@ Usage in ui.py:
     auth.show_login()
 """
 
-import tkinter as tk
-from tkinter import messagebox
 from typing import Callable
+from tkinter import messagebox
+import tkinter as tk
+
 from checkers.auth import auth_logic, auth
+from checkers.colors import Color
 
 
 class AuthUI:
@@ -37,18 +39,6 @@ class AuthUI:
         self._root = root
         self._on_login_success = on_login_success
         self._failed_attempts = 0
-
-        # Color system
-        self.BG_APP = "#0f172a"
-        self.BG_CARD = "#1e293b"
-        self.BG_INPUT = "#334155"
-        self.BG_TOPBAR = "#111827"
-        self.FG_TEXT = "#f8fafc"
-        self.FG_MUTED = "#94a3b8"
-        self.COLOR_ACCENT = "#f43f5e"
-        self.COLOR_ACCENT_HOVER = "#e11d48"
-        self.COLOR_ERROR = "#ef4444"
-        self.COLOR_SUCCESS = "#22c55e"
 
         # Typography
         self.FONT_TITLE = ("Arial", 26, "bold")
@@ -78,7 +68,7 @@ class AuthUI:
         """Render the login screen inside the root window."""
         self._clear()
         self._root.title("Checkers Pro - Login")
-        self._root.configure(bg=self.BG_APP)
+        self._root.configure(bg=Color.BG_APP)
 
         self._add_top_bar()
 
@@ -86,34 +76,34 @@ class AuthUI:
         self._password_var.set("")
         self._login_error_var.set("")
 
-        container = tk.Frame(self._root, bg=self.BG_APP)
+        container = tk.Frame(self._root, bg=Color.BG_APP)
         container.place(relx=0.5, rely=0.52, anchor="center")
 
-        card = tk.Frame(container, bg=self.BG_CARD, padx=44, pady=36)
+        card = tk.Frame(container, bg=Color.BG_CARD, padx=44, pady=36)
         card.pack()
 
         tk.Label(
             card,
             text="CHECKERS PRO",
             font=self.FONT_TITLE,
-            fg=self.COLOR_ACCENT,
-            bg=self.BG_CARD,
+            fg=Color.FG_ACCENT,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 6))
 
         tk.Label(
             card,
             text="Welcome back! Please enter your details.",
             font=self.FONT_SUBTITLE,
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 18))
 
         tk.Label(
             card,
             textvariable=self._login_error_var,
             font=self.FONT_SMALL,
-            fg=self.COLOR_ERROR,
-            bg=self.BG_CARD,
+            fg=Color.ERROR,
+            bg=Color.BG_CARD,
             wraplength=360,
         ).pack(pady=(0, 8))
 
@@ -124,9 +114,9 @@ class AuthUI:
             card,
             text="SIGN IN",
             font=self.FONT_BUTTON,
-            bg=self.COLOR_ACCENT,
+            bg=Color.FG_ACCENT,
             fg="white",
-            activebackground=self.COLOR_ACCENT_HOVER,
+            activebackground=Color.BG_DANGER_HOVER,
             activeforeground="white",
             bd=0,
             relief="flat",
@@ -136,17 +126,17 @@ class AuthUI:
             pady=10,
         )
         login_btn.pack(fill="x", pady=(22, 12))
-        self._bind_hover(login_btn, self.COLOR_ACCENT, self.COLOR_ACCENT_HOVER)
+        self._bind_hover(login_btn, Color.FG_ACCENT, Color.BG_DANGER_HOVER)
 
         # Footer with register link
-        footer = tk.Frame(card, bg=self.BG_CARD)
+        footer = tk.Frame(card, bg=Color.BG_CARD)
         footer.pack()
 
         tk.Label(
             footer,
             text="Don't have an account?",
-            bg=self.BG_CARD,
-            fg=self.FG_MUTED,
+            bg=Color.BG_CARD,
+            fg=Color.FG_MUTED,
             font=self.FONT_SMALL,
         ).pack(side="left")
 
@@ -154,10 +144,10 @@ class AuthUI:
             footer,
             text="Sign up",
             font=("Arial", 10, "bold"),
-            bg=self.BG_CARD,
-            fg=self.COLOR_ACCENT,
-            activebackground=self.BG_CARD,
-            activeforeground=self.COLOR_ACCENT_HOVER,
+            bg=Color.BG_CARD,
+            fg=Color.FG_ACCENT,
+            activebackground=Color.BG_CARD,
+            activeforeground=Color.BG_DANGER_HOVER,
             bd=0,
             relief="flat",
             cursor="hand2",
@@ -172,33 +162,33 @@ class AuthUI:
         """Render the register screen inside the root window."""
         self._clear()
         self._root.title("Checkers Pro - Register")
-        self._root.configure(bg=self.BG_APP)
+        self._root.configure(bg=Color.BG_APP)
 
         self._add_top_bar()
         self._reg_error_var.set("")
         self._reg_password_var.set("")
         self._reg_confirm_var.set("")
 
-        container = tk.Frame(self._root, bg=self.BG_APP)
+        container = tk.Frame(self._root, bg=Color.BG_APP)
         container.place(relx=0.5, rely=0.53, anchor="center")
 
-        card = tk.Frame(container, bg=self.BG_CARD, padx=44, pady=36)
+        card = tk.Frame(container, bg=Color.BG_CARD, padx=44, pady=36)
         card.pack()
 
         tk.Label(
             card,
             text="CREATE ACCOUNT",
             font=("Arial", 24, "bold"),
-            fg=self.COLOR_ACCENT,
-            bg=self.BG_CARD,
+            fg=Color.FG_ACCENT,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 6))
 
         tk.Label(
             card,
             text="Join Checkers Pro in less than a minute.",
             font=self.FONT_SUBTITLE,
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
         ).pack(pady=(0, 16))
 
         self._build_input(card, "USERNAME", self._reg_username_var, hidden=False)
@@ -213,8 +203,8 @@ class AuthUI:
                 "lowercase, number, and special character."
             ),
             font=("Arial", 9),
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
             wraplength=360,
             justify="left",
         ).pack(anchor="w", pady=(8, 4))
@@ -223,22 +213,22 @@ class AuthUI:
             card,
             textvariable=self._reg_error_var,
             font=self.FONT_SMALL,
-            fg=self.COLOR_ERROR,
-            bg=self.BG_CARD,
+            fg=Color.ERROR,
+            bg=Color.BG_CARD,
             wraplength=360,
             justify="left",
         ).pack(anchor="w", pady=(2, 10))
 
-        btn_row = tk.Frame(card, bg=self.BG_CARD)
+        btn_row = tk.Frame(card, bg=Color.BG_CARD)
         btn_row.pack(fill="x", pady=(6, 0))
 
         register_btn = tk.Button(
             btn_row,
             text="REGISTER",
             font=self.FONT_BUTTON,
-            bg=self.COLOR_ACCENT,
+            bg=Color.FG_ACCENT,
             fg="white",
-            activebackground=self.COLOR_ACCENT_HOVER,
+            activebackground=Color.BG_DANGER_HOVER,
             activeforeground="white",
             bd=0,
             relief="flat",
@@ -248,16 +238,16 @@ class AuthUI:
             pady=10,
         )
         register_btn.pack(side="left", expand=True, fill="x", padx=(0, 6))
-        self._bind_hover(register_btn, self.COLOR_ACCENT, self.COLOR_ACCENT_HOVER)
+        self._bind_hover(register_btn, Color.FG_ACCENT, Color.BG_DANGER_HOVER)
 
         back_btn = tk.Button(
             btn_row,
             text="BACK TO LOGIN",
             font=("Arial", 11, "bold"),
-            bg=self.BG_INPUT,
-            fg=self.FG_TEXT,
-            activebackground="#475569",
-            activeforeground=self.FG_TEXT,
+            bg=Color.BG_BUTTON,
+            fg=Color.FG_TEXT,
+            activebackground=Color.BG_BUTTON_HOVER,
+            activeforeground=Color.FG_TEXT,
             bd=0,
             relief="flat",
             cursor="hand2",
@@ -266,7 +256,7 @@ class AuthUI:
             pady=10,
         )
         back_btn.pack(side="left", expand=True, fill="x", padx=(6, 0))
-        self._bind_hover(back_btn, self.BG_INPUT, "#475569")
+        self._bind_hover(back_btn, Color.BG_BUTTON, Color.BG_BUTTON_HOVER)
 
         # Enter key triggers register
         self._root.bind("<Return>", lambda _e: self._handle_register())
@@ -371,15 +361,15 @@ class AuthUI:
         hidden: bool = False,
     ) -> None:
         """Create a styled input row with label and entry."""
-        wrap = tk.Frame(parent, bg=self.BG_CARD)
+        wrap = tk.Frame(parent, bg=Color.BG_CARD)
         wrap.pack(fill="x", pady=8)
 
         tk.Label(
             wrap,
             text=label,
             font=self.FONT_LABEL,
-            fg=self.FG_MUTED,
-            bg=self.BG_CARD,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_CARD,
         ).pack(anchor="w")
 
         entry = tk.Entry(
@@ -387,14 +377,14 @@ class AuthUI:
             textvariable=variable,
             show="*" if hidden else "",
             font=self.FONT_INPUT,
-            bg=self.BG_INPUT,
-            fg=self.FG_TEXT,
-            insertbackground=self.FG_TEXT,
+            bg=Color.BG_BUTTON,
+            fg=Color.FG_TEXT,
+            insertbackground=Color.FG_TEXT,
             bd=0,
             relief="flat",
             highlightthickness=2,
-            highlightbackground=self.BG_CARD,
-            highlightcolor=self.COLOR_ACCENT,
+            highlightbackground=Color.BG_CARD,
+            highlightcolor=Color.FG_ACCENT,
         )
         entry.pack(fill="x", ipady=8, pady=(5, 0))
 
@@ -405,25 +395,26 @@ class AuthUI:
 
     def _add_top_bar(self) -> None:
         """Add a top bar showing current date/time from root._datetime_var."""
-        top_bar = tk.Frame(self._root, bg=self.BG_TOPBAR)
+        top_bar = tk.Frame(self._root, bg=Color.BG_TOPBAR)
         top_bar.pack(fill="x", padx=12, pady=(10, 0))
 
         tk.Label(
             top_bar,
             text="Checkers Pro",
             font=("Arial", 11, "bold"),
-            fg=self.FG_MUTED,
-            bg=self.BG_TOPBAR,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_TOPBAR,
             padx=8,
             pady=6,
         ).pack(side="left")
 
+        assert self._root._datetime_var
         tk.Label(
             top_bar,
             textvariable=self._root._datetime_var,
             font=("Arial", 11),
-            fg=self.FG_MUTED,
-            bg=self.BG_TOPBAR,
+            fg=Color.FG_MUTED,
+            bg=Color.BG_TOPBAR,
             padx=8,
             pady=6,
         ).pack(side="right")
