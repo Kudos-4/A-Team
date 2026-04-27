@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 class GameState(GameMode):
     """Isolated game copy to emulate player-computer interactions."""
 
-    def __init__(self, game_ui: GameScreen) -> None:
-        super().__init__(game_ui)
+    def __init__(self, game_ui: GameScreen, players: tuple[Player, Player]) -> None:
+        super().__init__(game_ui, players)
         del self._ui
 
     def tile_pressed(self, position: Position) -> None:
@@ -25,16 +25,25 @@ class GameState(GameMode):
 
 class PvEGameMode(GameMode):
     def __init__(self, game_ui: GameScreen, players: tuple[Player, Player]) -> None:
-        super().__init__(game_ui)
-        self._player1, self._player2 = players
+        super().__init__(game_ui, players)
         self.max_depth: int = 2
         self.move_delay_ms: int = 500
-        self._gamestate = GameState(game_ui)
+        self._gamestate = GameState(game_ui, players)
         if self.is_computers_turn():
             self._make_move()
 
     def tile_pressed(self, position: Position) -> None:
-        """Ignores any user tile clicks while computer is making move."""
+        """
+        Handles tile interaction depending on current turn.
+
+        If a player makes a turn on their move, their inputs are treated
+        as normal, similar to PvP.
+
+        During the computer's turn, ignore tile clicks until computer's turn is over.
+
+        :param position: Position of tile
+        :type position: Position
+        """
         if self.is_computers_turn():
             return
 
@@ -54,16 +63,25 @@ class PvEGameMode(GameMode):
         return self._player2.color == self._game.turn
 
     def _make_move(self) -> None:
+        """Calculates the best move to make and executes one of them.
+
+        This function repeats until the computer's turn is over."""
         best_moves = self._compute_best_moves()
         if not best_moves:
             raise Exception("Computer cannot find a move from MiniMax algorithm.")
         random_i = random.randint(0, len(best_moves) - 1)
-        first, second = best_moves[random_i]
-        self._ui.after(self.move_delay_ms, lambda: self._press_tile(first))
-        self._ui.after(2 * self.move_delay_ms, lambda: self._press_tile(second))
+        self._update_tile_press_with_delay(best_moves[random_i])
+        # Tkinter's async operations forces is_computers_turn to be delayed
+        # until the moves made are finished.
         self._ui.after(3 * self.move_delay_ms, self._check_forced_move)
 
+    def _update_tile_press_with_delay(self, move: Move) -> None:
+        first, second = move
+        self._ui.after(self.move_delay_ms, lambda: self._press_tile(first))
+        self._ui.after(2 * self.move_delay_ms, lambda: self._press_tile(second))
+
     def _press_tile(self, position: Position) -> None:
+        """Sync both the current game and its gamestate counterpart"""
         super().tile_pressed(position)
         self._gamestate.tile_pressed(position)
         self._ui.update_interface()
@@ -73,7 +91,13 @@ class PvEGameMode(GameMode):
             self._make_move()
 
     def _compute_best_moves(self) -> list[Move]:
-        """Iterates through all moves and returns the best moves that can be made."""
+        """
+        Iterates through all moves and returns the best moves that can be made
+        using the MiniMax algorithm.
+
+        :return: List of the relative best moves that can be made.
+        :rtype: list[Move]
+        """
         highest_score: Optional[int] = None
         best_moves: list[Move] = []
 
@@ -92,8 +116,17 @@ class PvEGameMode(GameMode):
         return best_moves
 
     def _minimax(self, gamestate: GameState, depth: int) -> int:
-        """Recursively searches all decision with a given depth
-        using score function to evaluate the best move."""
+        """
+        Recursively searches all decision with a given depth
+        using a defined score function to evaluate the best move.
+
+        :param gamestate: A future state of the game
+        :type gamestate: GameState
+        :param depth: Number of recursive depth searches of a current move.
+        :type depth: int
+        :return: Best score of the given gamestate.
+        :rtype: int
+        """
         if not depth or gamestate._game.get_game_winner() is not None:
             return self._score_by_piece_value(gamestate)
 
@@ -124,7 +157,16 @@ class PvEGameMode(GameMode):
         return sum(isinstance(piece, King) for piece in pieces)
 
     def _new_gamestate(self, gamestate: GameState, move: Move) -> GameState:
-        """Create new gamestate from the move decision."""
+        """
+        Creates new projected gamestate using the given move.
+
+        :param gamestate: Copy of the current iteration
+        :type gamestate: GameState
+        :param move: Move to be made
+        :type move: Move
+        :return: New GameState object of future move.
+        :rtype: GameState
+        """
         gamestate = copy.deepcopy(self._gamestate)
         for position in move:
             gamestate.tile_pressed(position)

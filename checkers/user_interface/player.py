@@ -6,4 +6,3 @@ from dataclasses import dataclass
 class Player:
     username: str
     color: ColorID
-    is_computer: bool = False

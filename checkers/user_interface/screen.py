@@ -20,7 +20,7 @@ class Screen(tk.Toplevel, ABC):
         self.protocol("WM_DELETE_WINDOW", self.close)
 
         # Optional keyboard shortcuts used by most screens.
-        self.bind("<Escape>", lambda _e: self.close())
+        self.bind("<Escape>", lambda _: self.close())
 
     def clear_screen(self) -> None:
         """Remove all direct child widgets from the screen."""

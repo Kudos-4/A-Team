@@ -16,7 +16,7 @@ from checkers.user_interface import Player, Screen, AssetHandler
 
 
 class GameScreen(Screen):
-    """Main game UI screen for checkers."""
+    """Main game user interface for checkers and initiating rounds."""
 
     def __init__(self, player1_username: str, user_id: int) -> None:
         super().__init__()
@@ -46,21 +46,23 @@ class GameScreen(Screen):
         self.configure(bg=Color.BG_APP)
 
     def run(self) -> None:
+        """Prompts gamemode, turn, and creates a functional
+        layout with with the configuration selected"""
         self.clear_screen()
         self.configure(bg=Color.BG_APP)
         self._initialize_game_variables()
 
-        self.prompt_gamemode()
+        self._prompt_gamemode()
         gamemode: type[GameMode] = PvEGameMode
         if self._pvp_enabled:
-            self.prompt_player2_username()
+            self._prompt_player2_username()
             gamemode = PvPGameMode
-        self.prompt_whos_first()
+        self._prompt_whos_first()
         self._game_handler = self._construct_gamemode(gamemode)
 
         self._start_date = datetime.now()
         self._build_game_layout()
-        self.update_turn_ui()
+        self._update_turn_ui()
         self._show_forced_moves()
 
     def _initialize_game_variables(self) -> None:
@@ -75,29 +77,34 @@ class GameScreen(Screen):
         self._logs = []
 
     def _construct_gamemode(self, gamemode: type[GameMode]) -> GameMode:
-        if gamemode is PvPGameMode:
-            return PvPGameMode(self)
-        players = self._create_players(gamemode)
-        return PvEGameMode(self, players)
+        """
+        Creates GameMode subclass using player usernames, gamemode type,
+        and first move prompts as arguments.
 
-    def _create_players(self, gamemode: type[GameMode]) -> tuple[Player, Player]:
-        player1_color = ColorID.LIGHT
-        if self._player1_username == self._get_username_by_color(ColorID.DARK):
-            player1_color = ColorID.DARK
-        player1 = Player(self._player1_username, player1_color)
-        player2 = Player(
-            username=self._player2_username,
-            color=~player1_color,
-            is_computer=gamemode is PvEGameMode,
+        :param gamemode: Selected gamemode type
+        :type gamemode: type[GameMode]
+        :return: Initialized gamehandler
+        :rtype: GameMode
+        """
+        players = (
+            self._create_player(self._player1_username),
+            self._create_player(self._player2_username),
         )
-        return player1, player2
+        return gamemode(self, players)
+
+    def _create_player(self, username: str) -> Player:
+        player_color = ColorID.DARK
+        if username != self._get_username_by_color(ColorID.DARK):
+            player_color = ~player_color
+        return Player(username, player_color)
 
     # -------------------------------------------------------------------------
     # Pre-game prompts
     # -------------------------------------------------------------------------
 
-    def prompt_gamemode(self) -> None:
-        """Prompt player to select game mode."""
+    def _prompt_gamemode(self) -> None:
+        """Clears screen and prompt user to select gamemode.
+        Waits on selection to assign to _pvp_enabled instance variable."""
         self.clear_screen()
         self.configure(bg=Color.BG_APP)
 
@@ -136,8 +143,9 @@ class GameScreen(Screen):
         self.wait_variable(is_pvp)
         self._pvp_enabled = is_pvp.get()
 
-    def prompt_player2_username(self) -> None:
-        """Prompt player 2 username for PvP mode."""
+    def _prompt_player2_username(self) -> None:
+        """Clears screen and prompt user for username if PvP selected.
+        _player2_username modified when passed checks."""
         self.clear_screen()
         self.configure(bg=Color.BG_APP)
 
@@ -191,18 +199,28 @@ class GameScreen(Screen):
         self._themed_button(
             card,
             text="Confirm Username",
-            command=lambda: self.handle_username(username, valid_username, error_var),
+            command=lambda: self._handle_username(username, valid_username, error_var),
         ).pack(fill="x")
 
         self.wait_variable(valid_username)
 
-    def handle_username(
+    def _handle_username(
         self,
         username: tk.StringVar,
         valid_user_flag: tk.BooleanVar,
         error_var: tk.StringVar,
     ) -> None:
-        """Validate player 2 username and continue only if valid."""
+        """
+        Validate player 2's username using Auth's validate_username().
+        Will modify error_var if invalid name, else set valid_user_flag.
+
+        :param username: Player 2's dynamic text at confirmation.
+        :type username: tk.StringVar
+        :param valid_user_flag: Flag if username successfully passed.
+        :type valid_user_flag: tk.BooleanVar
+        :param error_var: Message that will be raised if invalid username.
+        :type error_var: tk.StringVar
+        """
         error_msg = auth_logic.validate_username(username.get().strip())
         if error_msg:
             error_var.set(error_msg)
@@ -210,8 +228,9 @@ class GameScreen(Screen):
         self._player2_username = username.get().strip()
         valid_user_flag.set(True)
 
-    def prompt_whos_first(self) -> None:
-        """Prompt who plays first as dark."""
+    def _prompt_whos_first(self) -> None:
+        """Creates UI screen and assigns player's username string
+        to _dark_piece_player."""
         self.clear_screen()
         self.configure(bg=Color.BG_APP)
 
@@ -255,7 +274,13 @@ class GameScreen(Screen):
     # -------------------------------------------------------------------------
 
     def _build_game_layout(self) -> None:
-        """Build main game screen: top bar, side panel, and board."""
+        """
+        Builds in-game menu layout, which includes:
+
+        :Top-bar: Usernames of players and turn UI.
+        :Side panel: Left panel draw, return to menu buttons, and move log.
+        :Board: Initializes game board, and tile functionality.
+        """
         self.clear_screen()
         self.configure(bg=Color.BG_APP)
 
@@ -302,7 +327,7 @@ class GameScreen(Screen):
         self._themed_button(
             panel,
             text="Offer Draw",
-            command=self.end_in_draw,
+            command=self._end_in_draw,
             bg=Color.BG_BUTTON,
             hover_bg=Color.BG_BUTTON_HOVER,
         ).pack(fill="x", pady=6)
@@ -346,14 +371,14 @@ class GameScreen(Screen):
         self._init_board(board_wrap)
 
     def _init_board(self, parent: tk.Widget) -> None:
-        """Create all board tiles and bind click handlers."""
+        """Create board as button grid and bind click handlers to each tile
+        to be sent to gamehandler."""
         board_frame = tk.Frame(parent, bg=Color.BG_APP)
-        board_frame.pack(expand=True)  # 不用 place，避免尺寸计算问题
+        board_frame.pack(expand=True)
 
         self._tile_buttons = []
         self._tile_default_bg = {}
 
-        # 用固定 8x8 + _tile_at 取格子，避免内部结构差异导致循环空
         rows, cols = self._board_size
         for i in range(rows):
             current_row: list[tk.Button] = []
@@ -382,8 +407,25 @@ class GameScreen(Screen):
     # Board rendering and interactions
     # -------------------------------------------------------------------------
 
+    def _tile_clicked(self, position: Position) -> None:
+        """
+        Registers the tile click to the gamehandler to modify depending
+        on the gamemode.
+
+        :param position: Location the tile with respect to the game board.
+        :type position: Position
+        """
+        self._game_handler.tile_pressed(position)  # Updates game state
+
     def _get_image(self, position: Position) -> ImageTk.PhotoImage:
-        """Resolve the image for a tile based on piece and tile type."""
+        """
+        Resolve the image for a tile based on piece and tile type at tile.
+
+        :param position: Location the tile with respect to the game board
+        :type position: Position
+        :return: Updated image of tile according to game board.
+        :rtype: PhotoImage
+        """
         assets = self._assets
         if piece := self._game.get_piece_at(position):
             color = piece.color
@@ -393,11 +435,13 @@ class GameScreen(Screen):
             item_type = assets.TILE
         return assets.get(color, item_type)
 
-    def _tile_clicked(self, position: Position) -> None:
-        """Send user input to GameMode handler, which should call update_interface afterwards"""
-        self._game_handler.tile_pressed(position)  # Updates game state
-
     def update_interface(self) -> None:
+        """
+        Updates the visual of the screen post-game interaction.
+        This includes highlighting, tile images, and showing game over screen.
+
+        This function is called from GameHandler after updating game state.
+        """
         self._clear_all_highlights()
         if selected := self._game_handler.selected_position:
             self._highlight_selected_and_moves(selected)
@@ -405,25 +449,25 @@ class GameScreen(Screen):
 
         if not self._game_handler.valid_move_made:
             return
-        self.update_tile_images()
-        self.update_turn_ui()
-        self.update_logging(self._game_handler.previous_move)
+        self._update_tile_images()
+        self._update_turn_ui()
+        self._update_logging(self._game_handler.previous_move)
 
         winner = self._game.get_game_winner()
         if winner is None:
             return
         winner_username = self._get_username_by_color(winner)
-        self.export_result_to_database(winner_username)
-        self.show_end_screen(winner_username)
+        self._export_result_to_database(winner_username)
+        self._show_end_screen(winner_username)
 
-    def update_tile_images(self) -> None:
+    def _update_tile_images(self) -> None:
         """Iterates over each position, updating the tile type at each one."""
         for position in ((i, j) for i in range(8) for j in range(8)):
             row, col = position
             button = self._tile_buttons[row][col]
             button["image"] = self._get_image(position)
 
-    def update_logging(
+    def _update_logging(
         self, previous_move: tuple[Position, Optional[Position], Position]
     ) -> None:
         """Writes to both the log list and log ingame UI."""
@@ -475,7 +519,7 @@ class GameScreen(Screen):
         self.log_text.see("end")
         self.log_text.configure(state="disabled")
 
-    def update_turn_ui(self) -> None:
+    def _update_turn_ui(self) -> None:
         """Update turn text in top bar."""
         color_name = "WHITE" if self._game.turn else "BLACK"
         username = self._get_username_by_color(self._game.turn)
@@ -496,14 +540,14 @@ class GameScreen(Screen):
     # End game and persistence
     # -------------------------------------------------------------------------
 
-    def end_in_draw(self) -> None:
+    def _end_in_draw(self) -> None:
         """End game as draw and show final screen."""
         if self._logs:
-            self.export_result_to_database(None)
-        self.show_end_screen(None)
+            self._export_result_to_database(None)
+        self._show_end_screen(None)
 
-    def export_result_to_database(self, winner: Optional[str]) -> None:
-        """Persist game result to database."""
+    def _export_result_to_database(self, winner: Optional[str]) -> None:
+        """Saves all related game variables to the database."""
         if winner:
             outcome = "Win" if winner == self._player1_username else "Loss"
         else:
@@ -518,7 +562,7 @@ class GameScreen(Screen):
             played_at=self._start_date.strftime("%Y-%m-%d %H:%M:%S"),
         )
 
-    def show_end_screen(self, winner: Optional[str]) -> None:
+    def _show_end_screen(self, winner: Optional[str]) -> None:
         """Render final result screen with actions."""
         self.clear_screen()
         self.configure(bg=Color.BG_APP)

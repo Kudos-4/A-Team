@@ -20,11 +20,12 @@ from checkers.gamemodes.pve import PvEGameMode, GameState
 # Minimal mock — no Tkinter required
 # ---------------------------------------------------------------------------
 
+
 class MockGameUI:
     def __init__(self, game: Game) -> None:
         self._game = game
 
-    def after(self, *args, **kwargs) -> None:   # replaces tk.after scheduling
+    def after(self, *args, **kwargs) -> None:  # replaces tk.after scheduling
         pass
 
     def update_interface(self) -> None:
@@ -34,6 +35,7 @@ class MockGameUI:
 # ---------------------------------------------------------------------------
 # Helpers (same as test_game_logic.py but duplicated to keep files independent)
 # ---------------------------------------------------------------------------
+
 
 def _make_empty_game() -> Game:
     game = Game((8, 8))
@@ -53,8 +55,8 @@ def _make_pve(game: Game) -> PvEGameMode:
     """Create a PvEGameMode where the human plays DARK and computer plays LIGHT.
     DARK moves first so the computer's __init__ branch (_make_move) is skipped."""
     mock_ui = MockGameUI(game)
-    player1 = Player(username="human",    color=ColorID.DARK)
-    player2 = Player(username="computer", color=ColorID.LIGHT, is_computer=True)
+    player1 = Player(username="human", color=ColorID.DARK)
+    player2 = Player(username="computer", color=ColorID.LIGHT)
     return PvEGameMode(mock_ui, (player1, player2))
 
 
@@ -63,8 +65,8 @@ def _make_pve(game: Game) -> PvEGameMode:
 # (all_moves_of_color returns only jumps when a jump is available)
 # ---------------------------------------------------------------------------
 
-class TestForcedCaptureLogic(unittest.TestCase):
 
+class TestForcedCaptureLogic(unittest.TestCase):
     def test_all_moves_returns_only_jumps_when_capture_available(self):
         """AC 26.2: When a capture is available, the computer (and game) returns
         only capturing moves — regular moves are suppressed."""
@@ -89,15 +91,15 @@ class TestForcedCaptureLogic(unittest.TestCase):
         for from_pos, to_pos in moves:
             piece = game.get_piece_at(from_pos)
             valid = game.get_valid_moves(piece)
-            self.assertIsNone(valid.get(to_pos))   # None = regular move, not a capture
+            self.assertIsNone(valid.get(to_pos))  # None = regular move, not a capture
 
 
 # ---------------------------------------------------------------------------
 # AC 26.1, 26.3, 27.1, 29.1, 29.2, 29.3 — PvEGameMode / minimax
 # ---------------------------------------------------------------------------
 
-class TestPvEComputer(unittest.TestCase):
 
+class TestPvEComputer(unittest.TestCase):
     def setUp(self):
         """Full initial board; human=DARK (moves first) so __init__ skips _make_move."""
         self.game = Game((8, 8))
@@ -124,7 +126,9 @@ class TestPvEComputer(unittest.TestCase):
     def test_score_favors_more_computer_pieces(self):
         """AC 26.3: _score_by_piece_value is higher when the computer has more pieces."""
         # Equal 12v12 board → score = computer_value - player_value = 12 - 12 = 0
-        gs_equal = GameState(self.mock_ui)
+        player1 = Player(username="human", color=ColorID.DARK)
+        player2 = Player(username="computer", color=ColorID.LIGHT)
+        gs_equal = GameState(self.mock_ui, (player1, player2))
         score_equal = self.pve._score_by_piece_value(gs_equal)
 
         # Board with only 1 LIGHT (computer) piece and 0 DARK pieces → score = 1 - 0 = 1
@@ -132,7 +136,9 @@ class TestPvEComputer(unittest.TestCase):
         _add(game_adv, Pawn((4, 4), ColorID.LIGHT))
         mock_adv = MockGameUI(game_adv)
         pve_adv = _make_pve(game_adv)
-        gs_adv = GameState(mock_adv)
+        player1 = Player(username="human", color=ColorID.DARK)
+        player2 = Player(username="computer", color=ColorID.LIGHT)
+        gs_adv = GameState(mock_adv, (player1, player2))
         score_adv = pve_adv._score_by_piece_value(gs_adv)
 
         self.assertGreater(score_adv, score_equal)
@@ -144,20 +150,24 @@ class TestPvEComputer(unittest.TestCase):
         _add(game_adv, Pawn((4, 4), ColorID.DARK))
         mock_adv = MockGameUI(game_adv)
         pve_adv = _make_pve(game_adv)
-        gs_adv = GameState(mock_adv)
+        player1 = Player(username="human", color=ColorID.DARK)
+        player2 = Player(username="computer", color=ColorID.LIGHT)
+        gs_adv = GameState(mock_adv, (player1, player2))
         score = pve_adv._score_by_piece_value(gs_adv)
         self.assertLess(score, 0)
 
     def test_king_adds_extra_value_to_score(self):
         """AC 26.3: A King counts as 2 in the score (piece + king bonus)."""
         game_king = _make_empty_game()
-        _add(game_king, King((4, 4), ColorID.LIGHT))   # value = 1 piece + 1 king = 2
-        _add(game_king, Pawn((3, 3), ColorID.DARK))    # value = 1 piece
+        _add(game_king, King((4, 4), ColorID.LIGHT))  # value = 1 piece + 1 king = 2
+        _add(game_king, Pawn((3, 3), ColorID.DARK))  # value = 1 piece
         mock_king = MockGameUI(game_king)
         pve_king = _make_pve(game_king)
-        gs_king = GameState(mock_king)
+        player1 = Player(username="human", color=ColorID.DARK)
+        player2 = Player(username="computer", color=ColorID.LIGHT)
+        gs_king = GameState(mock_king, (player1, player2))
         score = pve_king._score_by_piece_value(gs_king)
-        self.assertEqual(score, 1)   # 2 (computer) - 1 (player) = 1
+        self.assertEqual(score, 1)  # 2 (computer) - 1 (player) = 1
 
     # --- AC 27.1 -----------------------------------------------------------
 
@@ -169,20 +179,24 @@ class TestPvEComputer(unittest.TestCase):
         game._turn = ColorID.LIGHT
         pve = _make_pve(game)
         selected_before = pve.selected_position
-        pve.tile_pressed((3, 2))   # player tries to interact on computer's turn
+        pve.tile_pressed((3, 2))  # player tries to interact on computer's turn
         self.assertEqual(pve.selected_position, selected_before)
 
     # --- AC 29.1, 29.2, 29.3 -----------------------------------------------
 
     def test_minimax_returns_integer_at_depth_zero(self):
         """AC 29.1: _minimax at depth 0 evaluates the leaf and returns an integer."""
-        gs = GameState(self.mock_ui)
+        player1 = Player(username="human", color=ColorID.DARK)
+        player2 = Player(username="computer", color=ColorID.LIGHT)
+        gs = GameState(self.mock_ui, (player1, player2))
         score = self.pve._minimax(gs, 0)
         self.assertIsInstance(score, int)
 
     def test_minimax_returns_integer_at_depth_two(self):
         """AC 29.1/29.2: _minimax looks ahead two plies without crashing."""
-        gs = GameState(self.mock_ui)
+        player1 = Player(username="human", color=ColorID.DARK)
+        player2 = Player(username="computer", color=ColorID.LIGHT)
+        gs = GameState(self.mock_ui, (player1, player2))
         score = self.pve._minimax(gs, 2)
         self.assertIsInstance(score, int)
 

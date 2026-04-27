@@ -185,8 +185,8 @@ class ReplayScreen(tk.Toplevel):
         )
         self._next_btn.pack(side="left", padx=6)
 
-        self.bind("<Left>", lambda _e: self._step_back())
-        self.bind("<Right>", lambda _e: self._step_forward())
+        self.bind("<Left>", lambda _: self._step_back())
+        self.bind("<Right>", lambda _: self._step_forward())
 
     def _init_board(self, parent: tk.Widget) -> None:
         board_frame = tk.Frame(parent, bg=Color.BG_APP)
@@ -202,7 +202,7 @@ class ReplayScreen(tk.Toplevel):
                 color = ColorID(not is_dark)
                 btn = tk.Button(
                     board_frame,
-                    image=self._icons.get(color, self._icons.TILE),
+                    image=self._icons.get(color, AssetHandler.TILE),
                     bg=bg,
                     activebackground=bg,
                     bd=0,

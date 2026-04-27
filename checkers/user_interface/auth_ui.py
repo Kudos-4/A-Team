@@ -156,7 +156,7 @@ class AuthUI:
         reg_btn.pack(side="left", padx=6)
 
         # Enter key triggers login
-        self._root.bind("<Return>", lambda _e: self._handle_login())
+        self._root.bind("<Return>", lambda _: self._handle_login())
 
     def show_register(self) -> None:
         """Render the register screen inside the root window."""
@@ -259,7 +259,7 @@ class AuthUI:
         self._bind_hover(back_btn, Color.BG_BUTTON, Color.BG_BUTTON_HOVER)
 
         # Enter key triggers register
-        self._root.bind("<Return>", lambda _e: self._handle_register())
+        self._root.bind("<Return>", lambda _: self._handle_register())
 
     # ==========================================================================
     # Private: Login logic
@@ -390,8 +390,8 @@ class AuthUI:
 
     def _bind_hover(self, button: tk.Button, normal_bg: str, hover_bg: str) -> None:
         """Add simple hover effect to a button."""
-        button.bind("<Enter>", lambda _e: button.configure(bg=hover_bg))
-        button.bind("<Leave>", lambda _e: button.configure(bg=normal_bg))
+        button.bind("<Enter>", lambda _: button.configure(bg=hover_bg))
+        button.bind("<Leave>", lambda _: button.configure(bg=normal_bg))
 
     def _add_top_bar(self) -> None:
         """Add a top bar showing current date/time from root._datetime_var."""

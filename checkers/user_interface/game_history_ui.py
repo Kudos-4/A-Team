@@ -83,7 +83,7 @@ class GameHistoryScreen(Screen):
         # Keep canvas scroll region in sync with content size
         scrollable_frame.bind(
             "<Configure>",
-            lambda _e: canvas.configure(scrollregion=canvas.bbox("all")),
+            lambda _: canvas.configure(scrollregion=canvas.bbox("all")),
         )
 
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
@@ -334,8 +334,8 @@ class GameHistoryScreen(Screen):
         back_button.pack()
 
         back_button.bind(
-            "<Enter>", lambda _e: back_button.configure(bg=Color.BG_BUTTON_HOVER)
+            "<Enter>", lambda _: back_button.configure(bg=Color.BG_BUTTON_HOVER)
         )
         back_button.bind(
-            "<Leave>", lambda _e: back_button.configure(bg=Color.BG_BUTTON)
+            "<Leave>", lambda _: back_button.configure(bg=Color.BG_BUTTON)
         )

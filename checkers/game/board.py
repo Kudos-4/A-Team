@@ -52,9 +52,9 @@ class Tile:
 
 class Board:
     """
-    Handles the state of the checkers game.
-    Any validations such as moves, promotions, and game status
-    belong in the Game class.
+    Handles the state of the pieces on the board.
+
+    Provides status of tiles on board such as notation and color.
     """
 
     def __init__(self, board_size: tuple[int, int]) -> None:
@@ -62,6 +62,7 @@ class Board:
         self._board = self._initialize_board()
 
     def _initialize_board(self) -> list[list[Tile]]:
+        """Creates a grid of Tile instances using instance board_size"""
         odd = [ColorID(i % 2) for i in range(self._cols)]
         # Even rows are opposite of odd tiles; use negate
         even = [~color for color in odd]
@@ -75,14 +76,33 @@ class Board:
         return board
 
     def set_piece(self, position: Position, piece: Piece) -> None:
-        """Add piece to an empty spot."""
+        """
+        Attempts to place a piece on a given location.
+
+        Raises ValueError if position is already occupied.
+
+        :param position: Target location to place piece
+        :type position: Position
+        :param piece: Piece to be placed.
+        :type piece: Piece
+        """
         tile = self._tile_at(position)
         if tile.piece:
             raise ValueError("Position is already occupied with piece.")
         tile.piece = piece
 
     def move_piece(self, position: Position, new_position: Position) -> None:
-        """Move piece to an empty space. Does not handle if piece can reach; game controls rules."""
+        """
+        Moves the piece to another location.
+
+        Raises ValueError if either position is empty or
+        new_position is occupied.
+
+        :param position: Position of the original piece
+        :type position: Position
+        :param new_position: New location
+        :type new_position: Position
+        """
         # Board should modify tile.piece and update Piece.position
         current_tile = self._tile_at(position)
         new_tile = self._tile_at(new_position)
@@ -95,12 +115,26 @@ class Board:
         new_tile.piece.position = new_position
 
     def update_piece(self, position: Position, new_piece: Piece) -> None:
+        """
+        Sets new location with designated piece.
+
+        :param position: Empty tile where piece is replaced with.
+        :type position: Position
+        :param new_piece: New piece to place on tile.
+        :type new_piece: Piece
+        """
         tile = self._tile_at(position)
         if tile.piece is None:
             raise ValueError("No piece at position to replace.")
         tile.piece = new_piece
 
     def remove_piece(self, position: Position) -> None:
+        """
+        Evict the piece at the tile to None.
+
+        :param position: Location of tile with piece.
+        :type position: Position
+        """
         tile = self._tile_at(position)
         if tile.piece is None:
             raise ValueError("No piece at position to be removed")
@@ -111,6 +145,14 @@ class Board:
         return self._board[row][col]
 
     def piece_at(self, position: Position) -> Optional[Piece]:
+        """
+        Return the piece that occupies a tile, if any.
+
+        :param position: Target tile
+        :type position: Position
+        :return: Piece at given tile
+        :rtype: Piece | None
+        """
         return self._tile_at(position).piece
 
     def __getitem__(self, position: Position) -> Optional[Piece]:
@@ -118,9 +160,27 @@ class Board:
         return self.piece_at(position)
 
     def get_color_at(self, position: Position) -> ColorID:
+        """
+        Gets the ColorID of a given tile.
+
+        :param position: Target tile
+        :type position: Position
+        :return: ColorID.DARK | ColorID.LIGHT
+        :rtype: ColorID
+        """
         return self._tile_at(position).color
 
     def get_notation_at(self, position: Position) -> Optional[int]:
+        """
+        Gets tile notation depending on tile's value and location.
+
+        Returns None if light tile or an integer of dark tile.
+
+        :param position: Target tile
+        :type position: Position
+        :return: Tile notation value.
+        :rtype: int | None
+        """
         return self._tile_at(position).notation
 
     @property

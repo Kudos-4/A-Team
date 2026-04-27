@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
+from checkers.user_interface import Player
 from checkers.types import Position
 from checkers.game import Game
 
@@ -12,9 +13,10 @@ if TYPE_CHECKING:
 class GameMode(ABC):
     """Designed to handle inputs/gamestate based on game mode type."""
 
-    def __init__(self, game_ui: GameScreen) -> None:
+    def __init__(self, game_ui: GameScreen, players: tuple[Player, Player]) -> None:
         self._ui = game_ui
         self._game: Game = game_ui._game
+        self._player1, self._player2 = players
         self._selected_tile: Optional[Position] = None
         # Holds tuple of positions of (old, captured, new)
         self._previous_move: tuple[Position, Optional[Position], Position]
@@ -22,8 +24,16 @@ class GameMode(ABC):
 
     @abstractmethod
     def tile_pressed(self, position: Position) -> None:
-        """Processes any user input to the game. Needs to be overridden
-        to update the user interface depending on gamemode."""
+        """
+        Processes any user input to the game. Needs to be overridden
+        to update the user interface depending on gamemode.
+
+        This modifies the gamestate itself including captures, tile section,
+        and storing any previous moves.
+
+        :param position: Tile position pressed
+        :type position: Position
+        """
         self._made_valid_move = self._valid_move_made(position)
         if self._made_valid_move:
             assert self._selected_tile
@@ -32,7 +42,15 @@ class GameMode(ABC):
         self._selected_tile = self._updated_selected_tile(position)
 
     def _valid_move_made(self, position: Position) -> bool:
-        """Check if the current piece moved to the selected tile."""
+        """
+        Checks if selected tile (and the piece it owns) can be
+        moved to the newly selected location.
+
+        :param position: New location
+        :type position: Position
+        :return: If a move can be made to location
+        :rtype: bool
+        """
         if not self._selected_tile:
             return False
         if not self._game.get_piece_at(self._selected_tile):
@@ -42,7 +60,14 @@ class GameMode(ABC):
         return True
 
     def _update_previous_move(self, old: Position, new: Position) -> None:
-        """Update previous move if one is made."""
+        """
+        Updates the previous move variable if one is made.
+
+        :param old: Original piece location
+        :type old: Position
+        :param new: Current piece location
+        :type new: Position
+        """
         if not self._made_valid_move:
             return
         # Selected tile exists and has a piece beyond here
@@ -53,11 +78,17 @@ class GameMode(ABC):
         # Create string notation
         captured_piece = all_moves.get(new)
         captured_position = captured_piece.position if captured_piece else None
-        # captured_position = captured_piece and captured_piece.position
         self._previous_move = (old, captured_position, new)
 
     def _updated_selected_tile(self, new_position: Position) -> Optional[Position]:
-        """Compute the new selected tile value depending on current state."""
+        """
+        Compute the new selected tile value depending on current state.
+
+        :param new_position: Pressed tile by player.
+        :type new_position: Position
+        :return: New position or None to reset selection
+        :rtype: Position | None
+        """
         if self._made_valid_move:
             return None
 

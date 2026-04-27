@@ -113,7 +113,7 @@ class MainMenuUI(tk.Tk):
         ).pack(fill="x", pady=(8, 0))
 
         # Keyboard shortcut
-        self.bind("<Escape>", lambda _e: self.destroy())
+        self.bind("<Escape>", lambda _: self.destroy())
 
     def handle_logout(self) -> None:
         """Clear session and return to login screen."""
@@ -155,8 +155,8 @@ class MainMenuUI(tk.Tk):
             command=command,
         )
 
-        button.bind("<Enter>", lambda _e: button.configure(bg=over_bg))
-        button.bind("<Leave>", lambda _e: button.configure(bg=base_bg))
+        button.bind("<Enter>", lambda _: button.configure(bg=over_bg))
+        button.bind("<Leave>", lambda _: button.configure(bg=base_bg))
         return button
 
     def switch_to_new_window(
