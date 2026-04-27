@@ -480,7 +480,7 @@ class GameScreen(Screen):
         self._append_log_line(move)
 
     def _highlight_selected_and_moves(self, position: Position) -> None:
-        """Highlight selected piece and all valid target moves."""
+        """Highlight selected piece and all valid moves of it."""
         self._set_tile_bg(position, Color.HL_SELECTED)
 
         main_piece = self._game._board[position]
@@ -612,7 +612,8 @@ class GameScreen(Screen):
         """Ask user before leaving an ongoing game."""
         should_exit = messagebox.askyesno(
             "Return to Menu",
-            "Are you sure you want to leave this match?\nCurrent progress will be lost.",
+            "Are you sure you want to leave this match?\n"
+            "Current progress will be lost.",
         )
         if should_exit:
             self.destroy()

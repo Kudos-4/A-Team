@@ -82,7 +82,7 @@ class GameMode(ABC):
 
     def _updated_selected_tile(self, new_position: Position) -> Optional[Position]:
         """
-        Compute the new selected tile value depending on current state.
+        Compute the new selected tile value depending on current state and tile clicked.
 
         :param new_position: Pressed tile by player.
         :type new_position: Position

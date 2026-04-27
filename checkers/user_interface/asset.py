@@ -13,34 +13,25 @@ class AssetHandler:
     Accessing images requires both a color
     and an item type.
 
-    :var LIGHT: Color of the icon type
-    :vartype LIGHT: Literal[ColorID.LIGHT]
-    :var DARK: Color of the icon type
-    :vartype DARK: Literal[ColorID.DARK]
     :var TILE: Item type for image access
     :vartype TILE: Literal['tile']
     :var PAWN: Item type for image access
     :vartype PAWN: Literal['pawn']
     :var KING: Item type for image access
     :vartype KING: Literal['king']
-    :var filepaths: Description
-    :vartype filepaths: dict[tuple[ColorID, str], Path]
     """
-
-    LIGHT = ColorID.LIGHT
-    DARK = ColorID.DARK
 
     TILE = "tile"
     PAWN = "pawn"
     KING = "king"
 
-    filepaths = {
-        (DARK, TILE): ICON_DIRECTORY / "DarkTile.png",
-        (DARK, PAWN): ICON_DIRECTORY / "DarkPawn.png",
-        (DARK, KING): ICON_DIRECTORY / "DarkKing.png",
-        (LIGHT, TILE): ICON_DIRECTORY / "LightTile.png",
-        (LIGHT, PAWN): ICON_DIRECTORY / "LightPawn.png",
-        (LIGHT, KING): ICON_DIRECTORY / "LightKing.png",
+    _filepaths = {
+        (ColorID.DARK, TILE): ICON_DIRECTORY / "DarkTile.png",
+        (ColorID.DARK, PAWN): ICON_DIRECTORY / "DarkPawn.png",
+        (ColorID.DARK, KING): ICON_DIRECTORY / "DarkKing.png",
+        (ColorID.LIGHT, TILE): ICON_DIRECTORY / "LightTile.png",
+        (ColorID.LIGHT, PAWN): ICON_DIRECTORY / "LightPawn.png",
+        (ColorID.LIGHT, KING): ICON_DIRECTORY / "LightKing.png",
     }
 
     def __init__(self, icon_pixel_size: int) -> None:
@@ -49,7 +40,7 @@ class AssetHandler:
 
     def _initialize_icons(self) -> dict[tuple[ColorID, str], ImageTk.PhotoImage]:
         icons = {}
-        for key, path in AssetHandler.filepaths.items():
+        for key, path in AssetHandler._filepaths.items():
             image = Image.open(path).resize(self.resolution)
             icons[key] = ImageTk.PhotoImage(image)
         return icons
@@ -62,7 +53,7 @@ class AssetHandler:
         :type color: ColorID
         :param type: String literal of the item type (tile, pawn, king)
         :type type: str
-        :return: Description
+        :return: Image of specific item color
         :rtype: PhotoImage
         """
         key = (color, type)
