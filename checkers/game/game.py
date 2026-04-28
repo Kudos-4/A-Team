@@ -219,7 +219,8 @@ class Game:
     def _check_promotion(self, piece: Piece) -> bool:
         # promote pawn if it reached the last row
         if not isinstance(piece, Pawn):
-            return
+            return False
+
         target_row = 0 if piece.color else self._board.rows - 1
         if piece.position[0] == target_row:
             self._promote_pawn(piece)
