@@ -224,6 +224,9 @@ class Game:
         target_row = 0 if piece.color else self._board.rows - 1
         if piece.position[0] == target_row:
             self._promote_pawn(piece)
+            return True
+
+        return False
 
     def get_game_winner(self) -> Optional[ColorID]:
         """
