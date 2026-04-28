@@ -95,9 +95,15 @@ class Game:
         self._board.move_piece(piece_position, new_position)
         self._check_promotion(piece)
 
-        made_capture = any(valid_moves.values())
-        can_still_capture = any(self.get_valid_moves(piece).values())
-        if made_capture and can_still_capture:
+        moved_piece = self._board.piece_at(new_position)
+        can_still_capture = (
+                made_capture
+                and not promoted
+                and moved_piece is not None
+                and any(self.get_valid_moves(moved_piece).values())
+        )
+
+        if can_still_capture:
             return
         self._switch_turn()
 
