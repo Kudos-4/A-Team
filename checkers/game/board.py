@@ -142,6 +142,8 @@ class Board:
 
     def _tile_at(self, position: Position) -> Tile:
         row, col = position
+        if not (0 <= row < self._rows and 0 <= col < self._cols):
+            raise IndexError("Position is outside the board bounds.")
         return self._board[row][col]
 
     def piece_at(self, position: Position) -> Optional[Piece]:
