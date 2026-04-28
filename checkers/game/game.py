@@ -216,7 +216,7 @@ class Game:
         # swap whose turn it is after a move
         self._turn = ~self._turn
 
-    def _check_promotion(self, piece: Piece) -> None:
+    def _check_promotion(self, piece: Piece) -> bool:
         # promote pawn if it reached the last row
         if not isinstance(piece, Pawn):
             return
