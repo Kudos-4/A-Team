@@ -68,6 +68,8 @@ class Game:
         return True
 
     def move_piece(self, piece_position: Position, new_position: Position) -> None:
+        if not self.can_move_to(piece_position, new_position):
+            raise ValueError("Illegal move.")
         """
         Moves a piece to the selected position, handles piece promotion,
         and switches turn if no further moves can be made.
