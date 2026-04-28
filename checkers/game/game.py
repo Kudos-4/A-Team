@@ -93,7 +93,7 @@ class Game:
             self._board.remove_piece(captured.position)
 
         self._board.move_piece(piece_position, new_position)
-        self._check_promotion(piece)
+        promoted = self._check_promotion(piece)
 
         moved_piece = self._board.piece_at(new_position)
         can_still_capture = (
