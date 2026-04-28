@@ -105,6 +105,7 @@ class Game:
 
         if can_still_capture:
             return
+
         self._switch_turn()
 
     def _promote_pawn(self, pawn: Pawn) -> King:
