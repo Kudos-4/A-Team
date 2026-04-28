@@ -84,7 +84,10 @@ class Game:
         assert piece
         valid_moves = self.get_valid_moves(piece)
 
-        if captured := valid_moves.get(new_position):
+        captured = valid_moves.get(new_position)
+        made_capture = captured is not None
+
+        if captured:
             color_list = self.pieces[captured.color]
             color_list.remove(captured)
             self._board.remove_piece(captured.position)
